@@ -1,27 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Site Validation Tool</title>
 
 <style>
 
-body{font-family:Arial;margin:0;background:#f4f6fb;}
+body{font-family:Arial;margin:0;background:#f4f6fb}
 
 header{
 background:#1e3d8f;
 color:white;
 padding:14px;
-font-size:18px;
-position:sticky;
-top:0;
+font-size:18px
 }
 
 .container{
 padding:14px;
-max-width:1200px;
-margin:auto;
+max-width:1400px;
+margin:auto
 }
 
 .card{
@@ -29,39 +26,39 @@ background:white;
 padding:16px;
 margin-bottom:14px;
 border-radius:8px;
-border:1px solid #ddd;
+border:1px solid #ddd
 }
 
 .grid{
 display:grid;
 grid-template-columns:1fr 1fr 1fr;
-gap:14px;
+gap:14px
 }
 
 @media(max-width:900px){
-.grid{grid-template-columns:1fr;}
+.grid{grid-template-columns:1fr}
 }
 
 .field label{
 font-size:13px;
 font-weight:bold;
 display:block;
-margin-bottom:4px;
+margin-bottom:4px
 }
 
 input,select,textarea{
 width:100%;
 padding:9px;
 border-radius:6px;
-border:1px solid #ccc;
+border:1px solid #ccc
 }
 
 textarea{
-height:70px;
+height:70px
 }
 
 textarea::placeholder{
-color:#aaa;
+color:#aaa
 }
 
 button{
@@ -71,15 +68,7 @@ background:#1e3d8f;
 color:white;
 border-radius:6px;
 margin:4px;
-cursor:pointer;
-}
-
-.roomNav{
-position:sticky;
-top:60px;
-background:white;
-padding:8px;
-border-bottom:1px solid #ddd;
+cursor:pointer
 }
 
 .roomTab{
@@ -88,7 +77,7 @@ padding:9px 14px;
 border:1px solid #ccc;
 margin:4px;
 border-radius:6px;
-cursor:pointer;
+cursor:pointer
 }
 
 .sectionHeader{
@@ -96,23 +85,24 @@ background:#eef2ff;
 padding:8px;
 border-radius:6px;
 margin-top:14px;
-font-weight:bold;
+font-weight:bold
 }
 
 table{
 width:100%;
 border-collapse:collapse;
 margin-top:10px;
+font-size:12px
 }
 
 table th,table td{
 border:1px solid #ddd;
-padding:6px;
-text-align:center;
+padding:4px;
+text-align:center
 }
 
 .question{
-margin-bottom:12px;
+margin-bottom:12px
 }
 
 </style>
@@ -133,122 +123,37 @@ margin-bottom:12px;
 
 <div class="grid">
 
-<div class="field">
-<label>PID</label>
-<input id="pid">
-</div>
+<div class="field"><label>PID</label><input id="pid"></div>
+<div class="field"><label>Customer Name</label><input id="cx"></div>
+<div class="field"><label>City</label><input id="city"></div>
+<div class="field"><label>Address</label><input id="address"></div>
+<div class="field"><label>Society</label><input id="society"></div>
+<div class="field"><label>Flat No</label><input id="flat"></div>
 
 <div class="field">
-<label>Customer Name</label>
-<input id="cx">
-</div>
-
-<div class="field">
-<label>City</label>
-<input id="city">
-</div>
-
-<div class="field">
-<label>Address</label>
-<input id="address">
-</div>
-
-<div class="field">
-<label>Society</label>
-<input id="society">
-</div>
-
-<div class="field">
-<label>Flat No</label>
-<input id="flat">
-</div>
-
-<div class="field">
-<label>Service Lift Available</label>
-<select id="serviceLift">
+<label>Is Service lift Usage Allowed?</label>
+<select id="serviceLiftUsage">
 <option></option>
-<option>Yes</option>
-<option>No</option>
+<option>Heavy material movement allowed</option>
+<option>Heavy material movement Not allowed</option>
 </select>
 </div>
 
 <div class="field">
-<label>Service Lift Size</label>
-<input id="liftSize">
-</div>
-
-<div class="field">
-<label>Passenger Lift Usage</label>
-<select id="passLift">
+<label>Is dedicated area (for debris and material) present for loading/unloading ?</label>
+<select id="loadingArea">
 <option></option>
-<option>Allowed</option>
-<option>Not Allowed</option>
-<option>No Lift</option>
+<option>Yes, present within 30 ft of site location</option>
+<option>Yes, present more than 30 ft of site location</option>
+<option>Not present, direct loading/unloading to be done</option>
 </select>
 </div>
 
-<div class="field">
-<label>Vehicle Entry</label>
-<select id="vehicle">
-<option></option>
-<option>Small Vehicles</option>
-<option>Large Vehicles</option>
-<option>Not Allowed</option>
-</select>
-</div>
-
-<div class="field">
-<label>Power Supply Available</label>
-<select id="power">
-<option></option>
-<option>Yes</option>
-<option>No</option>
-</select>
-</div>
-
-<div class="field">
-<label>Water Supply Available</label>
-<select id="water">
-<option></option>
-<option>Yes</option>
-<option>No</option>
-</select>
-</div>
-
-<div class="field">
-<label>Mivan Construction</label>
-<select id="mivan">
-<option></option>
-<option>Yes</option>
-<option>No</option>
-</select>
-</div>
-
-<div class="field">
-<label>Demolition Allowed</label>
-<select id="demo">
-<option></option>
-<option>Manual</option>
-<option>Mechanised</option>
-<option>Both</option>
-</select>
-</div>
-
-<div class="field">
-<label>Work Timing Restrictions</label>
-<input id="workTime">
-</div>
-
-<div class="field">
-<label>Society Restrictions</label>
-<textarea id="societyRestrictions" placeholder="Add Comments"></textarea>
 </div>
 
 </div>
 
-</div>
-
-<div class="roomNav">
+<div class="card">
 <div id="roomTabs"></div>
 <button onclick="addRoom()">Add Room</button>
 </div>
@@ -269,46 +174,54 @@ margin-bottom:12px;
 
 const walls=["NW","EW","SW","WW"]
 
+const modules=["1M","2M","3M","4M","6M","8M","10M","12M","AC Point","Fan"]
+
 const defaultRooms=[
 "Living Room","Kitchen","Bedroom 1","Bedroom 2","Bathroom 1","Bathroom 2","Balcony"
 ]
 
 const roomQuestions=[
-"False ceiling clearance sufficient",
-"Ceiling undulation present",
-"Water leakage on ceiling",
-"Sliding system feasible",
-"Window modification possible",
-"Window condition poor",
-"Module relocation possible",
-"15A power supply present",
-"Plumbing issues present",
-"Plumbing outdated",
-"Main inlet valve accessible",
-"Space for shower cubicle",
-"WC relocation possible",
-"Damp proof required",
-"Weather proof required",
-"Existing countertop present",
-"False ceiling damage",
-"Door condition poor",
-"Door refurbishable",
-"Termite infestation present"
+
+"Is there a requirement of PCC due to leveling issues/bare shell property?",
+"Existing flooring in Good condition with with proper slope/levels?",
+"Can we do tile on tile installation?",
+"Is there sufficient height or clearance between the existing ceiling and any obstructions (such as beams, HVAC systems, or lighting fixtures) to accommodate the false ceiling installation?",
+"Are there visible undulations/uneven surface on the True Ceiling?",
+"Is there any evidence of water leaks or moisture damage on the existing true ceiling?",
+"Are the dimensions of the space suitable for accommodating a sliding door system?",
+"Can we changes to the size, shape, or location of the windows?",
+"Are the existing windows and window frames in poor condition, damaged, rot, instability etc",
+"Is there a possibility to relocate from one wall to another?",
+"Is there any 15 Amp power Supply present in the room?",
+"Are there any issues with the existing plumbing lines, such as leaks, corrosion, blockages, or inadequate capacity, that require replacement or repair?",
+"Are existing plumbing lines old and outdated and may not be compatible with modern fixtures?",
+"Is the main inlet valve accesible?",
+"Is there sufficent space to provide Shower cubicle?",
+"Is it possible to relocate the WC, without any modifications to external pipeline/drain line?",
+"Do we need to provide damp proof treament on walls?",
+"Do we need to provide weather proof treatment on walls which are exposed to external atmosphere?",
+"Is there existing countertop present?",
+"Are there any issues with the existing false ceiling, such as damage, sagging, or instability, that require removal and replacement?"
+
 ]
 
 const wallQuestions=[
-"Load bearing wall / Mivan wall",
-"Dry wall / Gypsum wall",
-"Major cracks requiring structural repair",
-"Surface undulation",
-"Undulation more than 6mm",
-"Minor cracks / loose plaster",
-"Core cut location available",
-"Switch/socket working condition",
-"Switchboard reusable",
-"Split AC possible",
-"Dark shade on wall",
-"Paint condition poor"
+
+"Is the wall a load-bearing wall/Mivan Construction/Sheer wall?",
+"Is the wall dry wall/Gypsum wall?",
+"Are there major cracks that require structural repair?",
+"Does the existing wall surface have undulations or uneven surface, requiring leveling?",
+"Are the undulation more than 6 mm?",
+"Are there minor cracks/loose plaster requiring re plastering??",
+"Is there suitable location for core cut available?",
+"Are existing switch/socket in working condition?",
+"Can we re-use the existing module/switch board?",
+"Can split AC be installed post false ceiling w/o pockets?",
+"Is panelling/pelmet required to be done for AC installation?",
+"Are there any darker shade on the wall?",
+"Is the existing paint in good condition, without excessive peeling, flaking, or bubbling?",
+"Do we need to remove skirting for wardrobe installlation?"
+
 ]
 
 let data={rooms:{}}
@@ -316,7 +229,7 @@ let data={rooms:{}}
 function init(){
 
 defaultRooms.forEach(r=>{
-data.rooms[r]={measurements:{},electrical:{},room:{},walls:{}}
+data.rooms[r]={electrical:{},room:{},walls:{}}
 })
 
 renderTabs()
@@ -341,7 +254,7 @@ let name=prompt("Room name")
 
 if(!name)return
 
-data.rooms[name]={measurements:{},electrical:{},room:{},walls:{}}
+data.rooms[name]={electrical:{},room:{},walls:{}}
 
 renderTabs()
 
@@ -349,151 +262,160 @@ renderTabs()
 
 function openRoom(room){
 
-let r=data.rooms[room]
-
 let html=`<h3>${room}</h3>`
 
-html+=`<div class="sectionHeader">Ceiling Height</div>
+html+=`<div class="sectionHeader">Electrical Modules</div>`
 
-<div class="grid">
-<input placeholder="NW" oninput="saveMeasure('${room}','nw',this.value)">
-<input placeholder="NE" oninput="saveMeasure('${room}','ne',this.value)">
-<input placeholder="SE" oninput="saveMeasure('${room}','se',this.value)">
-<input placeholder="SW" oninput="saveMeasure('${room}','sw',this.value)">
-<input placeholder="Center" oninput="saveMeasure('${room}','center',this.value)">
-</div>`
+html+=`<table><tr><th>Wall</th>`
 
-html+=`<div class="sectionHeader">Electrical</div>
+modules.forEach(m=>{html+=`<th>${m}</th>`})
 
-<table>
-<tr><th>Wall</th><th>4M</th><th>6M</th><th>8M</th></tr>`
+html+=`</tr>`
 
 walls.forEach(w=>{
-
-html+=`<tr>
-<td>${w}</td>
-<td><input oninput="saveElec('${room}','${w}','4M',this.value)"></td>
-<td><input oninput="saveElec('${room}','${w}','6M',this.value)"></td>
-<td><input oninput="saveElec('${room}','${w}','8M',this.value)"></td>
-</tr>`
-
+html+=`<tr><td>${w}</td>`
+modules.forEach(m=>{
+html+=`<td><input oninput="saveElec('${room}','${w}','${m}',this.value)"></td>`
+})
+html+=`</tr>`
 })
 
-html+="</table>"
+html+=`</table>`
 
-html+=`<div class="sectionHeader">Room Observations</div>`
+html+=`<div class="sectionHeader">Room Questions</div>`
 
 roomQuestions.forEach(q=>{
 html+=`
 <div class="question">
-
 <label>${q}</label>
-
 <select oninput="saveRoom('${room}','${q}',this.value)">
 <option></option>
 <option>Yes</option>
 <option>No</option>
-<option>N.A</option>
 </select>
-
 <textarea placeholder="Add Comments" oninput="saveRoomComment('${room}','${q}',this.value)"></textarea>
-
-</div>
-`
+</div>`
 })
 
-html+=`<div class="sectionHeader">Wall Observations</div>`
+html+=`<div class="sectionHeader">Wall Questions</div>`
 
 wallQuestions.forEach(q=>{
 html+=`
 <div class="question">
-
 <label>${q}</label>
-
 <select oninput="saveWall('${room}','${q}','answer',this.value)">
 <option></option>
 <option>Yes</option>
 <option>No</option>
-<option>N.A</option>
 </select>
-
 <select multiple oninput="saveWallWalls('${room}','${q}',this)">
 <option>NW</option>
 <option>EW</option>
 <option>SW</option>
 <option>WW</option>
 </select>
-
 <textarea placeholder="Add Comments" oninput="saveWall('${room}','${q}','comment',this.value)"></textarea>
-
-</div>
-`
+</div>`
 })
 
 document.getElementById("roomForm").innerHTML=html
 
 }
 
-function saveMeasure(r,k,v){data.rooms[r].measurements[k]=v}
-
-function saveElec(r,w,t,v){
-if(!data.rooms[r].electrical[w])data.rooms[r].electrical[w]={}
-data.rooms[r].electrical[w][t]=v
+function saveElec(room,wall,module,value){
+if(!data.rooms[room].electrical[wall])data.rooms[room].electrical[wall]={}
+data.rooms[room].electrical[wall][module]=value
 }
 
-function saveRoom(r,q,v){
-if(!data.rooms[r].room[q])data.rooms[r].room[q]={}
-data.rooms[r].room[q].answer=v
+function saveRoom(room,q,value){
+if(!data.rooms[room].room[q])data.rooms[room].room[q]={}
+data.rooms[room].room[q].answer=value
 }
 
-function saveRoomComment(r,q,v){
-data.rooms[r].room[q].comment=v
+function saveRoomComment(room,q,value){
+data.rooms[room].room[q].comment=value
 }
 
-function saveWall(r,q,t,v){
-if(!data.rooms[r].walls[q])data.rooms[r].walls[q]={}
-data.rooms[r].walls[q][t]=v
+function saveWall(room,q,type,value){
+if(!data.rooms[room].walls[q])data.rooms[room].walls[q]={}
+data.rooms[room].walls[q][type]=value
 }
 
-function saveWallWalls(r,q,e){
+function saveWallWalls(room,q,e){
 let s=[...e.selectedOptions].map(o=>o.value)
-data.rooms[r].walls[q].walls=s
+data.rooms[room].walls[q].walls=s
 }
 
 function generateExcel(){
 
-let roomObs=[]
-let wallObs=[]
+let rows=[]
 
 Object.keys(data.rooms).forEach(room=>{
 
 let r=data.rooms[room]
 
+Object.entries(r.electrical).forEach(([wall,val])=>{
+Object.entries(val).forEach(([module,count])=>{
+rows.push({
+Room:room,
+Section:"Electrical",
+Wall:wall,
+Item:module,
+Answer:count
+})
+})
+})
+
 Object.entries(r.room).forEach(([q,v])=>{
-roomObs.push({Room:room,Question:q,Answer:v.answer,Comment:v.comment})
+rows.push({
+Room:room,
+Section:"Room Question",
+Item:q,
+Answer:v.answer,
+Comment:v.comment
+})
 })
 
 Object.entries(r.walls).forEach(([q,v])=>{
-wallObs.push({Room:room,Question:q,Answer:v.answer,Walls:(v.walls||[]).join(","),Comment:v.comment})
+rows.push({
+Room:room,
+Section:"Wall Question",
+Item:q,
+Wall:(v.walls||[]).join(","),
+Answer:v.answer,
+Comment:v.comment
+})
 })
 
 })
 
 let wb=XLSX.utils.book_new()
-
-XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(roomObs),"Room Observations")
-XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(wallObs),"Wall Observations")
-
+XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Validation Data")
 XLSX.writeFile(wb,"site_validation.xlsx")
 
 }
 
 function fillTestData(){
 
-pid.value="TEST001"
-cx.value="Test Customer"
+Object.keys(data.rooms).forEach(room=>{
 
-alert("Test data loaded")
+modules.forEach(m=>{
+walls.forEach(w=>{
+saveElec(room,w,m,Math.floor(Math.random()*3))
+})
+})
+
+roomQuestions.forEach(q=>{
+data.rooms[room].room[q]={answer:"Yes",comment:"ABCD"}
+})
+
+wallQuestions.forEach(q=>{
+data.rooms[room].walls[q]={answer:"Yes",walls:["NW"],comment:"ABCD"}
+})
+
+})
+
+alert("Random test data added")
 
 }
 
