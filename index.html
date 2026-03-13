@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Site Validation Tool</title>
 
@@ -44,9 +43,7 @@ gap:10px;
 }
 
 @media(max-width:900px){
-.grid{
-grid-template-columns:1fr;
-}
+.grid{grid-template-columns:1fr;}
 }
 
 input,select,textarea{
@@ -120,7 +117,6 @@ font-weight:bold;
 
 </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 </head>
@@ -137,17 +133,16 @@ font-weight:bold;
 
 <div class="grid">
 
-<div><label>PID</label><input id="pid"></div>
-<div><label>Customer</label><input id="cx"></div>
-<div><label>City</label><input id="city"></div>
-<div><label>Address</label><input id="address"></div>
-<div><label>Society</label><input id="society"></div>
-<div><label>Flat</label><input id="flat"></div>
+<input id="pid" placeholder="PID">
+<input id="cx" placeholder="Customer">
+<input id="city" placeholder="City">
+<input id="address" placeholder="Address">
+<input id="society" placeholder="Society">
+<input id="flat" placeholder="Flat">
 
 </div>
 
 </div>
-
 
 <div class="card">
 
@@ -155,106 +150,80 @@ font-weight:bold;
 
 <div class="grid">
 
-<div>
-<label>Service Lift</label>
 <select id="serviceLift">
 <option></option>
 <option>Yes</option>
 <option>No</option>
 </select>
-</div>
 
-<div>
-<label>Lift Size</label>
-<input id="liftSize">
-</div>
+<input id="liftSize" placeholder="Lift Size">
 
-<div>
-<label>Passenger Lift</label>
 <select id="passLift">
 <option></option>
 <option>Allowed</option>
 <option>Not Allowed</option>
 <option>No Lift</option>
 </select>
-</div>
 
-<div>
-<label>Vehicle Entry</label>
 <select id="vehicle">
 <option></option>
 <option>Small Vehicles</option>
 <option>Large Vehicles</option>
 <option>Not Allowed</option>
 </select>
-</div>
 
-<div>
-<label>Power Supply</label>
 <select id="power">
 <option></option>
 <option>Yes</option>
 <option>No</option>
 </select>
-</div>
 
-<div>
-<label>Water Supply</label>
 <select id="water">
 <option></option>
 <option>Yes</option>
 <option>No</option>
 </select>
-</div>
 
-<div>
-<label>Mivan</label>
 <select id="mivan">
 <option></option>
 <option>Yes</option>
 <option>No</option>
 </select>
-</div>
 
-<div>
-<label>Demolition</label>
 <select id="demo">
 <option></option>
 <option>Manual</option>
 <option>Mechanised</option>
 <option>Both</option>
 </select>
-</div>
 
-<div>
-<label>Work Time</label>
-<input id="workTime">
-</div>
+<input id="workTime" placeholder="Work Time">
 
-<div>
-<label>Restrictions</label>
-<textarea id="societyRestrictions"></textarea>
-</div>
+<textarea id="societyRestrictions" placeholder="Restrictions"></textarea>
 
 </div>
 
 </div>
 
 <div class="roomNav">
+
 <div id="roomTabs"></div>
+
 <button onclick="addRoom()">Add Room</button>
+
 </div>
 
 <div class="card" id="roomForm"></div>
 
 <div class="card">
 
-<button onclick="generateReport()">Generate PDF + Excel</button>
+<button onclick="generateExcel()">Generate Excel</button>
+<button onclick="fillTestData()">Fill Test Data</button>
+<button onclick="clearAllData()">Clear All Data</button>
 
 </div>
 
 </div>
-
 
 <script>
 
@@ -271,6 +240,7 @@ const defaultRooms=[
 ]
 
 const roomQuestions=[
+
 "False ceiling clearance sufficient",
 "Ceiling undulation present",
 "Water leakage on ceiling",
@@ -291,9 +261,11 @@ const roomQuestions=[
 "Door condition poor",
 "Door refurbishable",
 "Termite infestation present"
+
 ]
 
 const wallQuestions=[
+
 "Load bearing wall / Mivan wall",
 "Dry wall / Gypsum wall",
 "Major cracks requiring structural repair",
@@ -306,30 +278,43 @@ const wallQuestions=[
 "Split AC possible",
 "Dark shade on wall",
 "Paint condition poor"
+
 ]
 
 let data={rooms:{}}
 
 function init(){
+
 defaultRooms.forEach(r=>{
 data.rooms[r]={measurements:{},electrical:{},room:{},walls:{}}
 })
+
 renderTabs()
+
 }
 
 function renderTabs(){
+
 let html=""
+
 Object.keys(data.rooms).forEach(r=>{
 html+=`<span class="roomTab" onclick="openRoom('${r}')">${r}</span>`
 })
+
 document.getElementById("roomTabs").innerHTML=html
+
 }
 
 function addRoom(){
+
 let name=prompt("Room name")
-if(!name) return
+
+if(!name)return
+
 data.rooms[name]={measurements:{},electrical:{},room:{},walls:{}}
+
 renderTabs()
+
 }
 
 function openRoom(room){
@@ -341,30 +326,14 @@ let html=`<h3>${room}</h3>`
 html+=`<div class="sectionHeader">Ceiling Height</div>
 
 <div class="grid">
-<input placeholder="NW" value="${r.measurements.nw||''}" oninput="saveMeasure('${room}','nw',this.value)">
-<input placeholder="NE" value="${r.measurements.ne||''}" oninput="saveMeasure('${room}','ne',this.value)">
-<input placeholder="SE" value="${r.measurements.se||''}" oninput="saveMeasure('${room}','se',this.value)">
-<input placeholder="SW" value="${r.measurements.sw||''}" oninput="saveMeasure('${room}','sw',this.value)">
-<input placeholder="Center" value="${r.measurements.center||''}" oninput="saveMeasure('${room}','center',this.value)">
+
+<input value="${r.measurements.nw||''}" placeholder="NW" oninput="saveMeasure('${room}','nw',this.value)">
+<input value="${r.measurements.ne||''}" placeholder="NE" oninput="saveMeasure('${room}','ne',this.value)">
+<input value="${r.measurements.se||''}" placeholder="SE" oninput="saveMeasure('${room}','se',this.value)">
+<input value="${r.measurements.sw||''}" placeholder="SW" oninput="saveMeasure('${room}','sw',this.value)">
+<input value="${r.measurements.center||''}" placeholder="Center" oninput="saveMeasure('${room}','center',this.value)">
+
 </div>`
-
-html+=`<div class="sectionHeader">Room Diagonal</div>
-
-<div class="grid">
-<input placeholder="Diagonal 1" value="${r.measurements.d1||''}" oninput="saveMeasure('${room}','d1',this.value)">
-<input placeholder="Diagonal 2" value="${r.measurements.d2||''}" oninput="saveMeasure('${room}','d2',this.value)">
-</div>`
-
-html+=`<div class="sectionHeader">Wall Deviation</div>
-
-<div class="grid">
-<input placeholder="NW" value="${r.measurements.devNW||''}" oninput="saveMeasure('${room}','devNW',this.value)">
-<input placeholder="EW" value="${r.measurements.devEW||''}" oninput="saveMeasure('${room}','devEW',this.value)">
-<input placeholder="SW" value="${r.measurements.devSW||''}" oninput="saveMeasure('${room}','devSW',this.value)">
-<input placeholder="WW" value="${r.measurements.devWW||''}" oninput="saveMeasure('${room}','devWW',this.value)">
-</div>`
-
-/* Electrical */
 
 html+=`<div class="sectionHeader">Electrical</div>
 
@@ -375,8 +344,6 @@ html+=`<div class="sectionHeader">Electrical</div>
 <th>6M</th>
 <th>8M</th>
 <th>12M</th>
-<th>Fan</th>
-<th>AC</th>
 </tr>`
 
 walls.forEach(w=>{
@@ -387,24 +354,16 @@ html+=`<tr>
 
 <td>${w}</td>
 
-<td><input type="number" value="${e['4M']||''}" oninput="saveElec('${room}','${w}','4M',this.value)"></td>
-
-<td><input type="number" value="${e['6M']||''}" oninput="saveElec('${room}','${w}','6M',this.value)"></td>
-
-<td><input type="number" value="${e['8M']||''}" oninput="saveElec('${room}','${w}','8M',this.value)"></td>
-
-<td><input type="number" value="${e['12M']||''}" oninput="saveElec('${room}','${w}','12M',this.value)"></td>
-
-<td><input type="number" value="${e['fan']||''}" oninput="saveElec('${room}','${w}','fan',this.value)"></td>
-
-<td><input type="number" value="${e['ac']||''}" oninput="saveElec('${room}','${w}','ac',this.value)"></td>
+<td><input value="${e['4M']||''}" oninput="saveElec('${room}','${w}','4M',this.value)"></td>
+<td><input value="${e['6M']||''}" oninput="saveElec('${room}','${w}','6M',this.value)"></td>
+<td><input value="${e['8M']||''}" oninput="saveElec('${room}','${w}','8M',this.value)"></td>
+<td><input value="${e['12M']||''}" oninput="saveElec('${room}','${w}','12M',this.value)"></td>
 
 </tr>`
+
 })
 
 html+="</table>"
-
-/* Room questions */
 
 html+=`<div class="sectionHeader">Room Observations</div>`
 
@@ -416,17 +375,15 @@ html+=`<div class="question">
 
 <select oninput="saveRoom('${room}','${q}',this.value)">
 <option></option>
-<option ${v.answer=='Yes'?'selected':''}>Yes</option>
-<option ${v.answer=='No'?'selected':''}>No</option>
-<option ${v.answer=='N.A'?'selected':''}>N.A</option>
+<option ${v.answer=="Yes"?"selected":""}>Yes</option>
+<option ${v.answer=="No"?"selected":""}>No</option>
+<option ${v.answer=="N.A"?"selected":""}>N.A</option>
 </select>
 
-<textarea oninput="saveRoomComment('${room}','${q}',this.value)">${v.comment||''}</textarea>
+<textarea oninput="saveRoomComment('${room}','${q}',this.value)">${v.comment||""}</textarea>
 
 </div>`
 })
-
-/* Wall questions */
 
 html+=`<div class="sectionHeader">Wall Observations</div>`
 
@@ -438,61 +395,56 @@ html+=`<div class="question">
 
 <select oninput="saveWall('${room}','${q}','answer',this.value)">
 <option></option>
-<option ${v.answer=='Yes'?'selected':''}>Yes</option>
-<option ${v.answer=='No'?'selected':''}>No</option>
-<option ${v.answer=='N.A'?'selected':''}>N.A</option>
+<option ${v.answer=="Yes"?"selected":""}>Yes</option>
+<option ${v.answer=="No"?"selected":""}>No</option>
+<option ${v.answer=="N.A"?"selected":""}>N.A</option>
 </select>
 
 <select multiple oninput="saveWallWalls('${room}','${q}',this)">
-<option ${v.walls?.includes('NW')?'selected':''}>NW</option>
-<option ${v.walls?.includes('EW')?'selected':''}>EW</option>
-<option ${v.walls?.includes('SW')?'selected':''}>SW</option>
-<option ${v.walls?.includes('WW')?'selected':''}>WW</option>
+<option ${v.walls?.includes("NW")?"selected":""}>NW</option>
+<option ${v.walls?.includes("EW")?"selected":""}>EW</option>
+<option ${v.walls?.includes("SW")?"selected":""}>SW</option>
+<option ${v.walls?.includes("WW")?"selected":""}>WW</option>
 </select>
 
-<textarea oninput="saveWall('${room}','${q}','comment',this.value)">${v.comment||''}</textarea>
+<textarea oninput="saveWall('${room}','${q}','comment',this.value)">${v.comment||""}</textarea>
 
 </div>`
 })
 
 document.getElementById("roomForm").innerHTML=html
+
 }
 
 function saveMeasure(r,k,v){data.rooms[r].measurements[k]=v}
+
 function saveElec(r,w,t,v){
 if(!data.rooms[r].electrical[w])data.rooms[r].electrical[w]={}
 data.rooms[r].electrical[w][t]=v
 }
+
 function saveRoom(r,q,v){
 if(!data.rooms[r].room[q])data.rooms[r].room[q]={}
 data.rooms[r].room[q].answer=v
 }
+
 function saveRoomComment(r,q,v){
 if(!data.rooms[r].room[q])data.rooms[r].room[q]={}
 data.rooms[r].room[q].comment=v
 }
+
 function saveWall(r,q,t,v){
 if(!data.rooms[r].walls[q])data.rooms[r].walls[q]={}
 data.rooms[r].walls[q][t]=v
 }
+
 function saveWallWalls(r,q,e){
 let s=[...e.selectedOptions].map(o=>o.value)
 if(!data.rooms[r].walls[q])data.rooms[r].walls[q]={}
 data.rooms[r].walls[q].walls=s
 }
 
-/* REPORT */
-
-function generateReport(){
-
-let project=[{
-PID:document.getElementById("pid").value,
-Customer:document.getElementById("cx").value,
-City:document.getElementById("city").value,
-Address:document.getElementById("address").value,
-Society:document.getElementById("society").value,
-Flat:document.getElementById("flat").value
-}]
+function generateExcel(){
 
 let measurements=[]
 let electrical=[]
@@ -504,7 +456,7 @@ Object.keys(data.rooms).forEach(room=>{
 let r=data.rooms[room]
 
 Object.entries(r.measurements).forEach(([k,v])=>{
-measurements.push({Room:room,Item:k,Value:v})
+measurements.push({Room:room,Measurement:k,Value:v})
 })
 
 Object.entries(r.electrical).forEach(([wall,val])=>{
@@ -525,7 +477,6 @@ wallObs.push({Room:room,Question:q,Answer:v.answer,Walls:(v.walls||[]).join(",")
 
 let wb=XLSX.utils.book_new()
 
-XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(project),"Project")
 XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(measurements),"Measurements")
 XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(electrical),"Electrical")
 XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(roomObs),"Room Observations")
@@ -533,6 +484,34 @@ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(wallObs),"Wall Observat
 
 XLSX.writeFile(wb,"site_validation.xlsx")
 
+}
+
+function fillTestData(){
+
+document.getElementById("pid").value="TEST001"
+document.getElementById("cx").value="Test Customer"
+
+Object.keys(data.rooms).forEach(room=>{
+
+data.rooms[room].measurements={nw:3050,ne:3050,se:3050,sw:3050,center:3050}
+
+roomQuestions.forEach(q=>{
+data.rooms[room].room[q]={answer:"No",comment:"OK"}
+})
+
+wallQuestions.forEach(q=>{
+data.rooms[room].walls[q]={answer:"No",walls:["NW"],comment:"OK"}
+})
+
+})
+
+alert("Test data loaded")
+
+}
+
+function clearAllData(){
+localStorage.clear()
+location.reload()
 }
 
 init()
