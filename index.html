@@ -57,6 +57,11 @@ font-size:14px;
 
 textarea{
 height:70px;
+color:#333;
+}
+
+textarea::placeholder{
+color:#aaa;
 }
 
 button{
@@ -128,19 +133,24 @@ font-weight:bold;
 
 <div class="container">
 
-<!-- PROJECT + SITE DETAILS -->
+<!-- PRELIMINARY PROJECT DETAILS -->
 
 <div class="card">
 
-<h3>Project & Site Execution Details</h3>
+<h3>Preliminary Project Details</h3>
 
 <div class="grid">
 
 <input id="pid" placeholder="PID">
+
 <input id="cx" placeholder="Customer Name">
+
 <input id="city" placeholder="City">
+
 <input id="address" placeholder="Address">
+
 <input id="society" placeholder="Society">
+
 <input id="flat" placeholder="Flat No">
 
 <select id="serviceLift">
@@ -166,13 +176,13 @@ font-weight:bold;
 </select>
 
 <select id="power">
-<option value="">Power Supply</option>
+<option value="">Power Supply Available</option>
 <option>Yes</option>
 <option>No</option>
 </select>
 
 <select id="water">
-<option value="">Water Supply</option>
+<option value="">Water Supply Available</option>
 <option>Yes</option>
 <option>No</option>
 </select>
@@ -190,9 +200,9 @@ font-weight:bold;
 <option>Both</option>
 </select>
 
-<input id="workTime" placeholder="Work Timing">
+<input id="workTime" placeholder="Work Timing Restrictions">
 
-<textarea id="societyRestrictions" placeholder="Society Restrictions"></textarea>
+<textarea id="societyRestrictions" placeholder="Add Comments"></textarea>
 
 </div>
 
@@ -233,6 +243,7 @@ const defaultRooms=[
 ]
 
 const roomQuestions=[
+
 "False ceiling clearance sufficient",
 "Ceiling undulation present",
 "Water leakage on ceiling",
@@ -253,9 +264,11 @@ const roomQuestions=[
 "Door condition poor",
 "Door refurbishable",
 "Termite infestation present"
+
 ]
 
 const wallQuestions=[
+
 "Load bearing wall / Mivan wall",
 "Dry wall / Gypsum wall",
 "Major cracks requiring structural repair",
@@ -268,30 +281,43 @@ const wallQuestions=[
 "Split AC possible",
 "Dark shade on wall",
 "Paint condition poor"
+
 ]
 
 let data={rooms:{}}
 
 function init(){
+
 defaultRooms.forEach(r=>{
 data.rooms[r]={measurements:{},electrical:{},room:{},walls:{}}
 })
+
 renderTabs()
+
 }
 
 function renderTabs(){
+
 let html=""
+
 Object.keys(data.rooms).forEach(r=>{
 html+=`<span class="roomTab" onclick="openRoom('${r}')">${r}</span>`
 })
+
 document.getElementById("roomTabs").innerHTML=html
+
 }
 
 function addRoom(){
+
 let name=prompt("Room name")
+
 if(!name)return
+
 data.rooms[name]={measurements:{},electrical:{},room:{},walls:{}}
+
 renderTabs()
+
 }
 
 function openRoom(room){
@@ -339,14 +365,18 @@ html+=`<div class="sectionHeader">Room Observations</div>`
 roomQuestions.forEach(q=>{
 let v=r.room[q]||{}
 html+=`<div class="question">
+
 <label>${q}</label>
+
 <select oninput="saveRoom('${room}','${q}',this.value)">
 <option></option>
 <option ${v.answer=="Yes"?"selected":""}>Yes</option>
 <option ${v.answer=="No"?"selected":""}>No</option>
 <option ${v.answer=="N.A"?"selected":""}>N.A</option>
 </select>
-<textarea oninput="saveRoomComment('${room}','${q}',this.value)">${v.comment||""}</textarea>
+
+<textarea placeholder="Add Comments" oninput="saveRoomComment('${room}','${q}',this.value)">${v.comment||""}</textarea>
+
 </div>`
 })
 
@@ -355,24 +385,30 @@ html+=`<div class="sectionHeader">Wall Observations</div>`
 wallQuestions.forEach(q=>{
 let v=r.walls[q]||{}
 html+=`<div class="question">
+
 <label>${q}</label>
+
 <select oninput="saveWall('${room}','${q}','answer',this.value)">
 <option></option>
 <option ${v.answer=="Yes"?"selected":""}>Yes</option>
 <option ${v.answer=="No"?"selected":""}>No</option>
 <option ${v.answer=="N.A"?"selected":""}>N.A</option>
 </select>
+
 <select multiple oninput="saveWallWalls('${room}','${q}',this)">
 <option ${v.walls?.includes("NW")?"selected":""}>NW</option>
 <option ${v.walls?.includes("EW")?"selected":""}>EW</option>
 <option ${v.walls?.includes("SW")?"selected":""}>SW</option>
 <option ${v.walls?.includes("WW")?"selected":""}>WW</option>
 </select>
-<textarea oninput="saveWall('${room}','${q}','comment',this.value)">${v.comment||""}</textarea>
+
+<textarea placeholder="Add Comments" oninput="saveWall('${room}','${q}','comment',this.value)">${v.comment||""}</textarea>
+
 </div>`
 })
 
 document.getElementById("roomForm").innerHTML=html
+
 }
 
 function saveMeasure(r,k,v){data.rooms[r].measurements[k]=v}
@@ -405,31 +441,13 @@ data.rooms[r].walls[q].walls=s
 
 function generateExcel(){
 
-let project=[{
-PID:pid.value,
-Customer:cx.value,
-City:city.value,
-Address:address.value,
-Society:society.value,
-Flat:flat.value,
-ServiceLift:serviceLift.value,
-LiftSize:liftSize.value,
-PassengerLift:passLift.value,
-VehicleEntry:vehicle.value,
-Power:power.value,
-Water:water.value,
-Mivan:mivan.value,
-Demolition:demo.value,
-WorkTime:workTime.value,
-Restrictions:societyRestrictions.value
-}]
-
 let measurements=[]
 let electrical=[]
 let roomObs=[]
 let wallObs=[]
 
 Object.keys(data.rooms).forEach(room=>{
+
 let r=data.rooms[room]
 
 Object.entries(r.measurements).forEach(([k,v])=>{
@@ -454,13 +472,13 @@ wallObs.push({Room:room,Question:q,Answer:v.answer,Walls:(v.walls||[]).join(",")
 
 let wb=XLSX.utils.book_new()
 
-XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(project),"Project")
 XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(measurements),"Measurements")
 XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(electrical),"Electrical")
 XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(roomObs),"Room Observations")
 XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(wallObs),"Wall Observations")
 
 XLSX.writeFile(wb,"site_validation.xlsx")
+
 }
 
 function fillTestData(){
@@ -478,9 +496,11 @@ data.rooms[room].room[q]={answer:"No",comment:"OK"}
 wallQuestions.forEach(q=>{
 data.rooms[room].walls[q]={answer:"No",walls:["NW"],comment:"OK"}
 })
+
 })
 
 alert("Test data loaded")
+
 }
 
 function clearAllData(){
