@@ -33,51 +33,52 @@ button{padding:10px 16px;border:none;background:#1e3d8f;color:white;border-radiu
 <div class="card">
 <h3>Preliminary Project Details</h3>
 <div class="grid">
-<input id="pid" placeholder="PID">
-<input id="cx" placeholder="Cx Name">
-<input id="city" placeholder="City">
-<input id="address" placeholder="Address">
-<input id="society" placeholder="Society Name">
-<input id="flat" placeholder="Flat No">
-<input id="floorNo" placeholder="Floor No">
+<input id="pid" placeholder="PID" onchange="saveData()">
+<input id="cx" placeholder="Cx Name" onchange="saveData()">
+<input id="city" placeholder="City" onchange="saveData()">
+<input id="address" placeholder="Address" onchange="saveData()">
+<input id="society" placeholder="Society Name" onchange="saveData()">
+<input id="flat" placeholder="Flat No" onchange="saveData()">
+<input id="floorNo" placeholder="Floor No" onchange="saveData()">
 </div>
 </div>
 
 <div class="card">
 <h3>Society Constraints</h3>
 <div class="grid">
-<select id="serviceLiftUsage">
+<select id="serviceLiftUsage" onchange="saveData()">
 <option value="">Service lift usage allowed?</option>
 <option>Heavy material movement allowed</option>
 <option>Heavy material movement Not allowed</option>
 </select>
 
-<select id="loadingArea">
+<select id="loadingArea" onchange="saveData()">
 <option value="">Debris loading area</option>
 <option>Within 30 ft</option>
 <option>More than 30 ft</option>
 <option>Not present</option>
 </select>
 
-<select id="debrisDumping">
+<select id="debrisDumping" onchange="saveData()">
 <option value="">Debris dumping allowed?</option>
 <option>Yes</option>
 <option>No</option>
 </select>
 
-<select id="vehicleEntry">
+<select id="vehicleEntry" onchange="saveData()">
 <option value="">Vehicle entry possible?</option>
 <option>Yes</option>
 <option>No</option>
 </select>
 
-<textarea id="societyRestrictions" placeholder="Society Restrictions"></textarea>
+<textarea id="societyRestrictions" placeholder="Society Restrictions" onchange="saveData()"></textarea>
 </div>
 </div>
 
 <div class="card">
 <div id="roomTabs"></div>
 <button onclick="addRoom()">Add Room</button>
+<button onclick="resetData()">Reset Data</button>
 </div>
 
 <div class="card" id="roomForm"></div>
@@ -134,31 +135,40 @@ let roomOrder=[...defaultRooms]
 
 let data=JSON.parse(localStorage.getItem("validatorData")||"{}")
 
-if(!data.project)data.project={}
-if(!data.constraints)data.constraints={}
-if(!data.rooms)data.rooms={}
+/* 🔧 DATA NORMALIZATION (CRITICAL FIX) */
+function normalizeData(){
+if(!data.project) data.project={}
+if(!data.constraints) data.constraints={}
+if(!data.rooms) data.rooms={}
 
 defaultRooms.forEach(r=>{
-if(!data.rooms[r])data.rooms[r]={room:{},wall:{},wallSel:{}}
+if(!data.rooms[r]) data.rooms[r]={}
+if(!data.rooms[r].room) data.rooms[r].room={}
+if(!data.rooms[r].wall) data.rooms[r].wall={}
+if(!data.rooms[r].wallSel) data.rooms[r].wallSel={}
 })
+}
+
+normalizeData()
 
 function saveData(){
+
 data.project={
-pid:pid.value,
-cx:cx.value,
-city:city.value,
-address:address.value,
-society:society.value,
-flat:flat.value,
-floorNo:floorNo.value
+pid:document.getElementById("pid").value,
+cx:document.getElementById("cx").value,
+city:document.getElementById("city").value,
+address:document.getElementById("address").value,
+society:document.getElementById("society").value,
+flat:document.getElementById("flat").value,
+floorNo:document.getElementById("floorNo").value
 }
 
 data.constraints={
-serviceLiftUsage:serviceLiftUsage.value,
-loadingArea:loadingArea.value,
-debrisDumping:debrisDumping.value,
-vehicleEntry:vehicleEntry.value,
-societyRestrictions:societyRestrictions.value
+serviceLiftUsage:document.getElementById("serviceLiftUsage").value,
+loadingArea:document.getElementById("loadingArea").value,
+debrisDumping:document.getElementById("debrisDumping").value,
+vehicleEntry:document.getElementById("vehicleEntry").value,
+societyRestrictions:document.getElementById("societyRestrictions").value
 }
 
 localStorage.setItem("validatorData",JSON.stringify(data))
@@ -174,13 +184,16 @@ onclick="openRoom('${r}')">${r}</span>`).join("")
 
 function openRoom(room){
 
-if(!data.rooms[room]){
-data.rooms[room]={room:{},wall:{},wallSel:{}}
-}
+/* 🔧 HARDENED STRUCTURE */
+if(!data.rooms[room]) data.rooms[room]={}
+if(!data.rooms[room].room) data.rooms[room].room={}
+if(!data.rooms[room].wall) data.rooms[room].wall={}
+if(!data.rooms[room].wallSel) data.rooms[room].wallSel={}
+
+const r=data.rooms[room]
 
 renderTabs(room)
 
-const r=data.rooms[room]
 const container=document.getElementById("roomForm")
 container.innerHTML=""
 
@@ -198,7 +211,7 @@ let label=document.createElement("label")
 label.textContent=q
 
 let select=createYesNo(r.wall[q], val=>{
-data.rooms[room].wall[q]=val
+r.wall[q]=val
 saveData()
 })
 
@@ -220,7 +233,7 @@ if(!arr.includes(w)) arr.push(w)
 }else{
 arr=arr.filter(x=>x!==w)
 }
-data.rooms[room].wallSel[q]=arr
+r.wallSel[q]=arr
 saveData()
 }
 
@@ -230,7 +243,7 @@ wallBox.appendChild(lbl)
 })
 
 let textarea=createTextarea(r.wall[q+"-c"], val=>{
-data.rooms[room].wall[q+"-c"]=val
+r.wall[q+"-c"]=val
 saveData()
 })
 
@@ -247,12 +260,12 @@ let label=document.createElement("label")
 label.textContent=q
 
 let select=createYesNo(r.room[q], val=>{
-data.rooms[room].room[q]=val
+r.room[q]=val
 saveData()
 })
 
 let textarea=createTextarea(r.room[q+"-c"], val=>{
-data.rooms[room].room[q+"-c"]=val
+r.room[q+"-c"]=val
 saveData()
 })
 
@@ -292,25 +305,12 @@ let r=data.rooms[room]
 
 Object.entries(r.wall).forEach(([k,v])=>{
 if(k.endsWith("-c")) return
-rows.push({
-Room:room,
-Section:"Wall",
-Item:k,
-Value:v,
-Walls:(r.wallSel[k]||[]).join(","),
-Comments:r.wall[k+"-c"]||""
-})
+rows.push({Room:room,Section:"Wall",Item:k,Value:v,Walls:(r.wallSel[k]||[]).join(","),Comments:r.wall[k+"-c"]||""})
 })
 
 Object.entries(r.room).forEach(([k,v])=>{
 if(k.endsWith("-c")) return
-rows.push({
-Room:room,
-Section:"Room",
-Item:k,
-Value:v,
-Comments:r.room[k+"-c"]||""
-})
+rows.push({Room:room,Section:"Room",Item:k,Value:v,Comments:r.room[k+"-c"]||""})
 })
 
 })
@@ -330,7 +330,14 @@ data.rooms[name]={room:{},wall:{},wallSel:{}}
 renderTabs(name)
 }
 
+function resetData(){
+localStorage.clear()
+location.reload()
+}
+
+/* INIT */
 document.addEventListener("DOMContentLoaded", function(){
+normalizeData()
 renderTabs(defaultRooms[0])
 openRoom(defaultRooms[0])
 })
