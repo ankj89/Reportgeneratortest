@@ -31,45 +31,45 @@ button{padding:10px 16px;border:none;background:#1e3d8f;color:white;border-radiu
 <div class="card">
 <h3>Preliminary Project Details</h3>
 <div class="grid">
-<input id="pid" placeholder="PID">
-<input id="cx" placeholder="Cx Name">
-<input id="city" placeholder="City">
-<input id="address" placeholder="Address">
-<input id="society" placeholder="Society Name">
-<input id="flat" placeholder="Flat No">
-<input id="floorNo" placeholder="Floor No">
+<input id="pid" placeholder="PID" onchange="saveProject()">
+<input id="cx" placeholder="Cx Name" onchange="saveProject()">
+<input id="city" placeholder="City" onchange="saveProject()">
+<input id="address" placeholder="Address" onchange="saveProject()">
+<input id="society" placeholder="Society Name" onchange="saveProject()">
+<input id="flat" placeholder="Flat No" onchange="saveProject()">
+<input id="floorNo" placeholder="Floor No" onchange="saveProject()">
 </div>
 </div>
 
 <div class="card">
 <h3>Society Constraints</h3>
 <div class="grid">
-<select id="serviceLiftUsage">
+<select id="serviceLiftUsage" onchange="saveConstraints()">
 <option>Service lift usage allowed?</option>
 <option>Heavy material movement allowed</option>
 <option>Heavy material movement Not allowed</option>
 </select>
 
-<select id="loadingArea">
+<select id="loadingArea" onchange="saveConstraints()">
 <option>Debris loading area</option>
 <option>Within 30 ft</option>
 <option>More than 30 ft</option>
 <option>Not present</option>
 </select>
 
-<select id="debrisDumping">
+<select id="debrisDumping" onchange="saveConstraints()">
 <option>Debris dumping allowed?</option>
 <option>Yes</option>
 <option>No</option>
 </select>
 
-<select id="vehicleEntry">
+<select id="vehicleEntry" onchange="saveConstraints()">
 <option>Vehicle entry possible?</option>
 <option>Yes</option>
 <option>No</option>
 </select>
 
-<textarea id="societyRestrictions" placeholder="Society Restrictions"></textarea>
+<textarea id="societyRestrictions" placeholder="Society Restrictions" onchange="saveConstraints()"></textarea>
 </div>
 </div>
 
@@ -81,7 +81,6 @@ button{padding:10px 16px;border:none;background:#1e3d8f;color:white;border-radiu
 <div class="card" id="roomForm"></div>
 
 <div class="card">
-<button onclick="saveData()">Save</button>
 <button onclick="generateExcel()">Generate Excel</button>
 </div>
 
@@ -89,8 +88,9 @@ button{padding:10px 16px;border:none;background:#1e3d8f;color:white;border-radiu
 
 <script>
 
-const roomQuestions=[
-"Is there a requirement of PCC due to leveling issues/bare shell property?",
+const walls=["NW","EW","SW","WW"]
+
+const roomQuestions=["Is there a requirement of PCC due to leveling issues/bare shell property?",
 "Existing flooring in Good condition with with proper slope/levels?",
 "Can we do tile on tile installation?",
 "Is there sufficient height or clearance between the existing ceiling and any obstructions (such as beams, HVAC systems, or lighting fixtures) to accommodate the false ceiling installation?",
@@ -112,8 +112,7 @@ const roomQuestions=[
 "Are there any issues with the existing false ceiling, such as damage, sagging, or instability, that require removal and replacement?"
 ]
 
-const wallQuestions=[
-"Is the wall a load-bearing wall/Mivan Construction/Sheer wall?",
+const wallQuestions=["Is the wall a load-bearing wall/Mivan Construction/Sheer wall?",
 "Is the wall dry wall/Gypsum wall?",
 "Are there major cracks that require structural repair?",
 "Does the existing wall surface have undulations or uneven surface, requiring leveling?",
@@ -126,19 +125,45 @@ const wallQuestions=[
 "Is panelling/pelmet required to be done for AC installation?",
 "Are there any darker shade on the wall?",
 "Is the existing paint in good condition, without excessive peeling, flaking, or bubbling?",
-"Do we need to remove skirting for wardrobe installlation?"
-]
+"Do we need to remove skirting for wardrobe installlation?"]
 
 const defaultRooms=["Living Room","Kitchen","Bedroom 1","Bedroom 2","Bathroom 1","Bathroom 2","Balcony"]
 
 let roomOrder=[...defaultRooms]
 
 let data=JSON.parse(localStorage.getItem("validatorData")||"{}")
+
+if(!data.project)data.project={}
+if(!data.constraints)data.constraints={}
 if(!data.rooms)data.rooms={}
 
 defaultRooms.forEach(r=>{
-if(!data.rooms[r])data.rooms[r]={room:{},wall:{}}
+if(!data.rooms[r])data.rooms[r]={room:{},wall:{},wallSel:{}}
 })
+
+function saveProject(){
+data.project={
+pid:pid.value,
+cx:cx.value,
+city:city.value,
+address:address.value,
+society:society.value,
+flat:flat.value,
+floorNo:floorNo.value
+}
+saveData()
+}
+
+function saveConstraints(){
+data.constraints={
+serviceLiftUsage:serviceLiftUsage.value,
+loadingArea:loadingArea.value,
+debrisDumping:debrisDumping.value,
+vehicleEntry:vehicleEntry.value,
+societyRestrictions:societyRestrictions.value
+}
+saveData()
+}
 
 function saveData(){
 localStorage.setItem("validatorData",JSON.stringify(data))
@@ -158,8 +183,6 @@ let title=document.createElement("h3")
 title.textContent=room
 container.appendChild(title)
 
-/* WALL QUESTIONS FIRST */
-
 let wallHeader=document.createElement("div")
 wallHeader.className="sectionHeader"
 wallHeader.textContent="Wall Questions"
@@ -167,7 +190,6 @@ container.appendChild(wallHeader)
 
 wallQuestions.forEach(q=>{
 let div=document.createElement("div")
-div.className="question"
 
 let label=document.createElement("label")
 label.textContent=q
@@ -177,18 +199,18 @@ select.innerHTML="<option></option><option>Yes</option><option>No</option>"
 select.value=r.wall[q]||""
 select.onchange=()=>{data.rooms[room].wall[q]=select.value; saveData()}
 
+let wallSel=document.createElement("select")
+wallSel.multiple=true
+wallSel.innerHTML="<option>NW</option><option>EW</option><option>SW</option><option>WW</option>"
+wallSel.onchange=()=>{data.rooms[room].wallSel[q]=[...wallSel.selectedOptions].map(o=>o.value); saveData()}
+
 let textarea=document.createElement("textarea")
-textarea.placeholder="Add Comments"
 textarea.value=r.wall[q+"-c"]||""
 textarea.onchange=()=>{data.rooms[room].wall[q+"-c"]=textarea.value; saveData()}
 
-div.appendChild(label)
-div.appendChild(select)
-div.appendChild(textarea)
+div.append(label,select,wallSel,textarea)
 container.appendChild(div)
 })
-
-/* ROOM QUESTIONS AFTER */
 
 let roomHeader=document.createElement("div")
 roomHeader.className="sectionHeader"
@@ -197,7 +219,6 @@ container.appendChild(roomHeader)
 
 roomQuestions.forEach(q=>{
 let div=document.createElement("div")
-div.className="question"
 
 let label=document.createElement("label")
 label.textContent=q
@@ -208,13 +229,10 @@ select.value=r.room[q]||""
 select.onchange=()=>{data.rooms[room].room[q]=select.value; saveData()}
 
 let textarea=document.createElement("textarea")
-textarea.placeholder="Add Comments"
 textarea.value=r.room[q+"-c"]||""
 textarea.onchange=()=>{data.rooms[room].room[q+"-c"]=textarea.value; saveData()}
 
-div.appendChild(label)
-div.appendChild(select)
-div.appendChild(textarea)
+div.append(label,select,textarea)
 container.appendChild(div)
 })
 
@@ -228,11 +246,11 @@ Object.keys(data.rooms).forEach(room=>{
 let r=data.rooms[room]
 
 Object.entries(r.wall).forEach(([k,v])=>{
-rows.push({Room:room,Section:"Wall",Item:k,Value:v})
+rows.push({...data.project,...data.constraints,Room:room,Section:"Wall",Item:k,Value:v,Walls:(r.wallSel[k]||[]).join(",")})
 })
 
 Object.entries(r.room).forEach(([k,v])=>{
-rows.push({Room:room,Section:"Room",Item:k,Value:v})
+rows.push({...data.project,...data.constraints,Room:room,Section:"Room",Item:k,Value:v})
 })
 
 })
@@ -242,14 +260,13 @@ let ws=XLSX.utils.json_to_sheet(rows)
 
 XLSX.utils.book_append_sheet(wb,ws,"Validation Data")
 XLSX.writeFile(wb,"site_validation.xlsx")
-
 }
 
 function addRoom(){
 let name=prompt("Room name")
 if(!name)return
 roomOrder.push(name)
-data.rooms[name]={room:{},wall:{}}
+data.rooms[name]={room:{},wall:{},wallSel:{}}
 renderTabs()
 }
 
