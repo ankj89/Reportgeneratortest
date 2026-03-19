@@ -4,6 +4,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Site Validation Tool</title>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
 <style>
 body{font-family:Arial;margin:0;background:#f4f6fb}
 header{background:#1e3d8f;color:white;padding:14px;font-size:18px}
@@ -28,73 +30,46 @@ button{padding:10px 16px;border:none;background:#1e3d8f;color:white;border-radiu
 
 <div class="card">
 <h3>Preliminary Project Details</h3>
-
 <div class="grid">
+<input id="pid" placeholder="PID" onchange="saveProject()">
+<input id="cx" placeholder="Cx Name" onchange="saveProject()">
+<input id="city" placeholder="City" onchange="saveProject()">
+<input id="address" placeholder="Address" onchange="saveProject()">
+<input id="society" placeholder="Society Name" onchange="saveProject()">
+<input id="flat" placeholder="Flat No" onchange="saveProject()">
+<input id="floorNo" placeholder="Floor No" onchange="saveProject()">
+</div>
+</div>
 
-<input placeholder="PID">
-<input placeholder="Cx Name">
-<input placeholder="City">
-<input placeholder="Address">
-<input placeholder="Society Name">
-<input placeholder="Flat No">
-<input placeholder="Floor No">
-
-<select>
-<option>BHK</option>
-<option>1</option>
-<option>2</option>
-<option>3</option>
-<option>4</option>
-</select>
-
-<select>
-<option>Property Type</option>
-<option>Bare shell</option>
-<option>Builder finished</option>
-<option>Resale</option>
-</select>
-
-<select>
-<option>Service lift available?</option>
-<option>Yes</option>
-<option>No</option>
-</select>
-
-<input placeholder="Service lift size">
-
-<select>
-<option>Passenger lift available?</option>
-<option>Yes</option>
-<option>No</option>
-</select>
-
-<select>
+<div class="card">
+<h3>Society Constraints</h3>
+<div class="grid">
+<select id="serviceLiftUsage" onchange="saveConstraints()">
 <option>Service lift usage allowed?</option>
 <option>Heavy material movement allowed</option>
 <option>Heavy material movement Not allowed</option>
 </select>
 
-<select>
+<select id="loadingArea" onchange="saveConstraints()">
 <option>Debris loading area</option>
 <option>Within 30 ft</option>
 <option>More than 30 ft</option>
 <option>Not present</option>
 </select>
 
-<select>
+<select id="debrisDumping" onchange="saveConstraints()">
 <option>Debris dumping allowed?</option>
 <option>Yes</option>
 <option>No</option>
 </select>
 
-<select>
+<select id="vehicleEntry" onchange="saveConstraints()">
 <option>Vehicle entry possible?</option>
 <option>Yes</option>
 <option>No</option>
 </select>
 
-<textarea placeholder="Society Restrictions"></textarea>
-
+<textarea id="societyRestrictions" placeholder="Society Restrictions" onchange="saveConstraints()"></textarea>
 </div>
 </div>
 
@@ -105,68 +80,109 @@ button{padding:10px 16px;border:none;background:#1e3d8f;color:white;border-radiu
 
 <div class="card" id="roomForm"></div>
 
+<div class="card">
+<button onclick="saveData()">Save</button>
+<button onclick="generateExcel()">Generate Excel</button>
+</div>
+
 </div>
 
 <script>
 
 const roomQuestions=[
-
 "Is there a requirement of PCC due to leveling issues/bare shell property?",
 "Existing flooring in Good condition with with proper slope/levels?",
 "Can we do tile on tile installation?",
-"Is there sufficient height or clearance between the existing ceiling and obstructions to accommodate the false ceiling installation? (Enter 4 corner + center measurement in comments)",
+"Is there sufficient height or clearance between the existing ceiling and any obstructions (such as beams, HVAC systems, or lighting fixtures) to accommodate the false ceiling installation?",
 "Are there visible undulations/uneven surface on the True Ceiling?",
 "Is there any evidence of water leaks or moisture damage on the existing true ceiling?",
-"Are the dimensions suitable for accommodating a sliding door system?",
-"Can we change the size or location of windows?",
-"Are the existing windows and window frames damaged?",
+"Are the dimensions of the space suitable for accommodating a sliding door system?",
+"Can we changes to the size, shape, or location of the windows?",
+"Are the existing windows and window frames in poor condition, damaged, rot, instability etc",
 "Is there a possibility to relocate from one wall to another?",
-"Is there any 15 Amp power Supply present?",
-"Are there plumbing issues requiring repair?",
-"Are existing plumbing lines outdated?",
-"Is the main inlet valve accessible?",
-"Is there sufficient space for shower cubicle?",
-"Is WC relocation possible?",
-"Do we need damp proof treatment?",
-"Do we need weather proof treatment?",
+"Is there any 15 Amp power Supply present in the room?",
+"Are there any issues with the existing plumbing lines, such as leaks, corrosion, blockages, or inadequate capacity, that require replacement or repair?",
+"Are existing plumbing lines old and outdated and may not be compatible with modern fixtures?",
+"Is the main inlet valve accesible?",
+"Is there sufficent space to provide Shower cubicle?",
+"Is it possible to relocate the WC, without any modifications to external pipeline/drain line?",
+"Do we need to provide damp proof treament on walls?",
+"Do we need to provide weather proof treatment on walls which are exposed to external atmosphere?",
 "Is there existing countertop present?",
-"Are there issues with the existing false ceiling?"
-
+"Are there any issues with the existing false ceiling, such as damage, sagging, or instability, that require removal and replacement?"
 ]
 
 const wallQuestions=[
-
-"Is the wall a load-bearing wall/Mivan Construction/Sheer wall? (Enter undulation measurement in comments)",
-"Is the wall dry wall/Gypsum wall? (Enter undulation measurement in comments)",
-"Are there major cracks requiring structural repair? (Enter measurement in comments)",
-"Does the existing wall surface have undulations requiring leveling? (Enter measurement in comments)",
-"Are the undulations more than 6 mm? (Enter measurement in comments)",
-"Are there minor cracks requiring re plastering?",
-"Is core cut location available?",
-"Are existing switch/socket working?",
-"Can we reuse existing switch board?",
-"Can split AC be installed post false ceiling?",
-"Is AC panelling required?",
-"Are there darker shades on wall?",
-"Is existing paint condition good?",
-"Do we need to remove skirting for wardrobe?"
-
+"Is the wall a load-bearing wall/Mivan Construction/Sheer wall?",
+"Is the wall dry wall/Gypsum wall?",
+"Are there major cracks that require structural repair?",
+"Does the existing wall surface have undulations or uneven surface, requiring leveling?",
+"Are the undulation more than 6 mm?",
+"Are there minor cracks/loose plaster requiring re plastering??",
+"Is there suitable location for core cut available?",
+"Are existing switch/socket in working condition?",
+"Can we re-use the existing module/switch board?",
+"Can split AC be installed post false ceiling w/o pockets?",
+"Is panelling/pelmet required to be done for AC installation?",
+"Are there any darker shade on the wall?",
+"Is the existing paint in good condition, without excessive peeling, flaking, or bubbling?",
+"Do we need to remove skirting for wardrobe installlation?"
 ]
 
 const defaultRooms=["Living Room","Kitchen","Bedroom 1","Bedroom 2","Bathroom 1","Bathroom 2","Balcony"]
 
 let roomOrder=[...defaultRooms]
 
+let data=JSON.parse(localStorage.getItem("validatorData")||"{}")
+if(!data.rooms)data.rooms={}
+if(!data.project)data.project={}
+if(!data.constraints)data.constraints={}
+
+defaultRooms.forEach(r=>{
+if(!data.rooms[r])data.rooms[r]={room:{},wall:{},wallSel:{}}
+})
+
+function saveProject(){
+data.project={pid:pid.value,cx:cx.value,city:city.value,address:address.value,society:society.value}
+saveData()
+}
+
+function saveConstraints(){
+data.constraints={
+serviceLiftUsage:serviceLiftUsage.value,
+loadingArea:loadingArea.value,
+debrisDumping:debrisDumping.value,
+vehicleEntry:vehicleEntry.value,
+societyRestrictions:societyRestrictions.value
+}
+saveData()
+}
+
+function saveData(){
+localStorage.setItem("validatorData",JSON.stringify(data))
+}
+
 function renderTabs(){
 let html=""
 roomOrder.forEach(r=>{
 html+=`<span class="roomTab" onclick="openRoom('${r}')">${r}</span>`
 })
-document.getElementById("roomTabs").innerHTML=html
+roomTabs.innerHTML=html
+}
+
+function store(room,type,key,val){
+data.rooms[room][type][key]=val
+saveData()
+}
+
+function storeWallSel(room,q,el){
+data.rooms[room].wallSel[q]=[...el.selectedOptions].map(o=>o.value)
+saveData()
 }
 
 function openRoom(room){
 
+let r=data.rooms[room]
 let html=`<h3>${room}</h3>`
 
 html+=`<div class="sectionHeader">Room Questions</div>`
@@ -175,12 +191,13 @@ roomQuestions.forEach(q=>{
 html+=`
 <div class="question">
 <label>${q}</label>
-<select>
+<select onchange="store('${room}','room',\`${q}\`,this.value)">
 <option></option>
-<option>Yes</option>
-<option>No</option>
+<option ${r.room[q]=="Yes"?"selected":""}>Yes</option>
+<option ${r.room[q]=="No"?"selected":""}>No</option>
 </select>
-<textarea placeholder="Add Comments"></textarea>
+<textarea placeholder="Add Comments"
+onchange="store('${room}','room',\`${q}-c\`,this.value)">${r.room[q+"-c"]||""}</textarea>
 </div>`
 })
 
@@ -190,29 +207,51 @@ wallQuestions.forEach(q=>{
 html+=`
 <div class="question">
 <label>${q}</label>
-<select>
+<select onchange="store('${room}','wall',\`${q}\`,this.value)">
 <option></option>
-<option>Yes</option>
-<option>No</option>
+<option ${r.wall[q]=="Yes"?"selected":""}>Yes</option>
+<option ${r.wall[q]=="No"?"selected":""}>No</option>
 </select>
-<select multiple>
-<option>NW</option>
-<option>EW</option>
-<option>SW</option>
-<option>WW</option>
+<select multiple onchange="storeWallSel('${room}',\`${q}\`,this)">
+<option>NW</option><option>EW</option><option>SW</option><option>WW</option>
 </select>
-<textarea placeholder="Add Comments"></textarea>
+<textarea placeholder="Add Comments"
+onchange="store('${room}','wall',\`${q}-c\`,this.value)">${r.wall[q+"-c"]||""}</textarea>
 </div>`
 })
 
-document.getElementById("roomForm").innerHTML=html
+roomForm.innerHTML=html
+}
 
+function generateExcel(){
+
+let rows=[]
+
+Object.keys(data.rooms).forEach(room=>{
+let r=data.rooms[room]
+
+Object.entries(r.room).forEach(([k,v])=>{
+rows.push({Room:room,Section:"Room",Item:k,Value:v})
+})
+
+Object.entries(r.wall).forEach(([k,v])=>{
+rows.push({Room:room,Section:"Wall",Item:k,Value:v})
+})
+
+})
+
+let wb=XLSX.utils.book_new()
+let ws=XLSX.utils.json_to_sheet(rows)
+
+XLSX.utils.book_append_sheet(wb,ws,"Validation Data")
+XLSX.writeFile(wb,"site_validation.xlsx")
 }
 
 function addRoom(){
 let name=prompt("Room name")
 if(!name)return
 roomOrder.push(name)
+data.rooms[name]={room:{},wall:{},wallSel:{}}
 renderTabs()
 }
 
