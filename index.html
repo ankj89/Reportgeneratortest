@@ -298,6 +298,10 @@ return t
 }
 
 function generateExcel(){
+
+// Ensure latest values are saved before export
+saveData()
+
 let rows=[]
 
 Object.keys(data.rooms).forEach(room=>{
@@ -305,12 +309,31 @@ let r=data.rooms[room]
 
 Object.entries(r.wall).forEach(([k,v])=>{
 if(k.endsWith("-c")) return
-rows.push({Room:room,Section:"Wall",Item:k,Value:v,Walls:(r.wallSel[k]||[]).join(","),Comments:r.wall[k+"-c"]||""})
+
+rows.push({
+...data.project,
+...data.constraints,
+Room:room,
+Section:"Wall",
+Item:k,
+Value:v,
+Walls:(r.wallSel[k]||[]).join(","),
+Comments:r.wall[k+"-c"]||""
+})
 })
 
 Object.entries(r.room).forEach(([k,v])=>{
 if(k.endsWith("-c")) return
-rows.push({Room:room,Section:"Room",Item:k,Value:v,Comments:r.room[k+"-c"]||""})
+
+rows.push({
+...data.project,
+...data.constraints,
+Room:room,
+Section:"Room",
+Item:k,
+Value:v,
+Comments:r.room[k+"-c"]||""
+})
 })
 
 })
@@ -321,7 +344,6 @@ let ws=XLSX.utils.json_to_sheet(rows)
 XLSX.utils.book_append_sheet(wb,ws,"Validation Data")
 XLSX.writeFile(wb,"site_validation.xlsx")
 }
-
 function addRoom(){
 let name=prompt("Room name")
 if(!name)return
