@@ -13,14 +13,35 @@ header{background:#1e3d8f;color:white;padding:14px;font-size:18px}
 .card{background:white;padding:16px;margin-bottom:14px;border-radius:8px;border:1px solid #ddd}
 .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
-input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc}
-textarea{height:60px}
-.sectionHeader{background:#eef2ff;padding:8px;border-radius:6px;margin-top:14px;font-weight:bold}
-button{padding:10px 16px;border:none;background:#1e3d8f;color:white;border-radius:6px;margin:4px;cursor:pointer}
+
+label{font-weight:600;font-size:13px}
+input,textarea{width:100%;padding:6px;border-radius:6px;border:1px solid #ccc}
+textarea{height:50px}
+
+button{padding:8px 12px;border:none;background:#1e3d8f;color:white;border-radius:6px;margin:4px;cursor:pointer}
+
 .roomTab{display:inline-block;padding:8px 12px;border:1px solid #ccc;margin:3px;border-radius:6px;cursor:pointer}
-.question{margin-bottom:12px}
-.wallBox{display:flex;gap:12px;margin:6px 0;flex-wrap:wrap}
-.wallBox label{display:flex;align-items:center;gap:4px;font-size:13px}
+
+.wallBox{display:flex;gap:12px;margin-top:6px}
+
+.accordion{cursor:pointer;background:#eef2ff;padding:10px;border-radius:6px;margin-top:10px}
+.accordionContent{display:none;padding-top:10px}
+
+.questionBlock{padding:8px;border-radius:6px;margin-bottom:8px}
+.statusAnswered{background:#e6f7e6}
+.statusPending{background:#ffe6e6}
+
+.progressBar{height:8px;background:#ddd;border-radius:4px;margin-top:6px}
+.progressFill{height:100%;background:#1e3d8f;border-radius:4px}
+
+.summaryBox{background:#f9fafc;padding:10px;border-radius:6px;margin-bottom:10px}
+
+/* 🔥 TOGGLE */
+.toggleGroup{display:flex;gap:6px;margin-top:6px}
+.toggleBtn{padding:6px 10px;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#fff}
+.toggleBtn.active.yes{background:#28a745;color:#fff}
+.toggleBtn.active.no{background:#dc3545;color:#fff}
+.toggleBtn.active.na{background:#6c757d;color:#fff}
 </style>
 </head>
 
@@ -32,7 +53,7 @@ button{padding:10px 16px;border:none;background:#1e3d8f;color:white;border-radiu
 
 <div class="card">
 <h3>Preliminary Project Details</h3>
-<div class="grid">
+<div style="display:flex;flex-direction:column;gap:12px;">
 <input id="pid" placeholder="PID" onchange="saveData()">
 <input id="cx" placeholder="Cx Name" onchange="saveData()">
 <input id="city" placeholder="City" onchange="saveData()">
@@ -42,37 +63,15 @@ button{padding:10px 16px;border:none;background:#1e3d8f;color:white;border-radiu
 <input id="floorNo" placeholder="Floor No" onchange="saveData()">
 </div>
 </div>
-
+  
 <div class="card">
 <h3>Society Constraints</h3>
-<div class="grid">
-<select id="serviceLiftUsage" onchange="saveData()">
-<option value="">Service lift usage allowed?</option>
-<option>Heavy material movement allowed</option>
-<option>Heavy material movement Not allowed</option>
-</select>
-
-<select id="loadingArea" onchange="saveData()">
-<option value="">Debris loading area</option>
-<option>Within 30 ft</option>
-<option>More than 30 ft</option>
-<option>Not present</option>
-</select>
-
-<select id="debrisDumping" onchange="saveData()">
-<option value="">Debris dumping allowed?</option>
-<option>Yes</option>
-<option>No</option>
-</select>
-
-<select id="vehicleEntry" onchange="saveData()">
-<option value="">Vehicle entry possible?</option>
-<option>Yes</option>
-<option>No</option>
-</select>
-
-<textarea id="societyRestrictions" placeholder="Society Restrictions" onchange="saveData()"></textarea>
+<div id="societyForm" style="display:flex;flex-direction:column;gap:8px;"></div>
 </div>
+
+
+
+
 </div>
 
 <div class="card">
@@ -90,260 +89,271 @@ button{padding:10px 16px;border:none;background:#1e3d8f;color:white;border-radiu
 </div>
 
 <script>
-
+const societyQuestions = [
+{key:"propertyType", label:"What is the type of property?", options:["Bare Shell","Property Less than 15 yrs","Property More than 15 yrs"]},
+{key:"serviceLiftUsage", label:"Service lift usage allowed?", options:["Yes,Heavy material movement allowed","Yes,Heavy material movement Not allowed","No"]},
+{key:"loadingArea", label:"Debris/material loading area present?", options:["Within 30 ft","More than 30 ft","Not present"]},
+{key:"societyDemolish", label:"What kind of demolition is allowed?", options:["Mechanical","Manual","Mechanical or Manual"]},
+{key:"vehicleEntry", label:"Vehicle entry allowed inside the premises?", options:["Yes,small size","Yes,medium size","Yes,large size","No"]},
+{key:"waterPoint", label:"Is there active water supply point at site location?", options:["Yes","No"]},
+{key:"electricPoint", label:"Is there active power supply at site location?", options:["Yes","No"]},
+{key:"workNOC", label:"Any NOC required to do internal modifications to the property?", options:["Yes","No"]},
+{key:"societyRestrictions", label:"Please mention any other society restrictions", type:"textarea"},
+{key:"societyWorktimings", label:"Please mention permissible work days and timings (e.g. Monday to Saturday, 10 AM to 2 PM, 4 PM to 8 PM)", type:"textarea"}                                                                     
+];
+  
 const walls=["NW","EW","SW","WW"]
 
-const roomQuestions = ["Is there a requirement of PCC due to leveling issues/bare shell property?",
-"Existing flooring in Good condition with with proper slope/levels?",
-"Can we do tile on tile installation?",
-"Is there sufficient height or clearance between the existing ceiling and any obstructions (such as beams, HVAC systems, or lighting fixtures) to accommodate the false ceiling installation?",
-"Are there visible undulations/uneven surface on the True Ceiling?",
+const roomQuestions=["Is there a requirement of PCC due to leveling issues/bare shell property?",
+"Existing flooring in Good condition with with proper slope/levels?Capture room diagonal mesurements (in mm) and provide in comments",
+"Is there sufficient height/clearance between floor to ceiling to accommodate false ceiling?Capture Floor to ceiling measurement in 4 corners and center and provide in comments",
+"Are there any issues with the existing false ceiling, such as damage, sagging, or instability, that require removal and replacement?",                   
+"Are there visible undulations/uneven surface on the True Ceiling?Mention treatment required in comments",
+"Are there any utilities (sprinkler pipes, plumbing line, ducts) or cross beams running on the ceiling? Capture the beam bottom to floor mesurement(in mm), Sprinkler head to Floor measurement(in mm) and provide in the comments",
 "Is there any evidence of water leaks or moisture damage on the existing true ceiling?",
-"Are the dimensions of the space suitable for accommodating a sliding door system?",
-"Can we changes to the size, shape, or location of the windows?",
-"Are the existing windows and window frames in poor condition, damaged, rot, instability etc",
-"Is there a possibility to relocate from one wall to another?",
-"Is there any 15 Amp power Supply present in the room?",
+"Can we do tile on tile installation?",                     
+"Are the existing doors and door frame in good condition?",
+"Are the existing windows and window frames in good condition?",
 "Are there any issues with the existing plumbing lines, such as leaks, corrosion, blockages, or inadequate capacity, that require replacement or repair?",
 "Are existing plumbing lines old and outdated and may not be compatible with modern fixtures?",
 "Is the main inlet valve accesible?",
 "Is there sufficent space to provide Shower cubicle?",
 "Is it possible to relocate the WC, without any modifications to external pipeline/drain line?",
-"Do we need to provide damp proof treament on walls?",
-"Do we need to provide weather proof treatment on walls which are exposed to external atmosphere?",
-"Is there existing countertop present?",
-"Are there any issues with the existing false ceiling, such as damage, sagging, or instability, that require removal and replacement?"];
-
-const wallQuestions = ["Is the wall a load-bearing wall/Mivan Construction/Sheer wall?",
+"Do we need to provide damp proof treament on walls? This has to be infomred and done by Cx",
+"Do we need to provide weather proof treatment on walls? This has to be infomred and done by Cx"]
+const wallQuestions=["Is the wall a load-bearing wall/Mivan Construction/Sheer wall?",
 "Is the wall dry wall/Gypsum wall?",
 "Are there major cracks that require structural repair?",
-"Does the existing wall surface have undulations or uneven surface, requiring leveling?",
+"Does the existing wall surface have undulations or uneven surface?Capture wall undulation and write in the comments(mm)",
 "Are the undulation more than 6 mm?",
 "Are there minor cracks/loose plaster requiring re plastering??",
 "Is there suitable location for core cut available?",
-"Are existing switch/socket in working condition?",
+"Are existing switch/socket in working condition?Capture Wall wise the Modules and configuration and mention in the comments",
 "Can we re-use the existing module/switch board?",
-"Can split AC be installed post false ceiling w/o pockets?",
+"Can split AC be installed post false ceiling w/o pockets? Capture Wall wise Sofit to Ceiling measurement and mention in the comments",
 "Is panelling/pelmet required to be done for AC installation?",
 "Are there any darker shade on the wall?",
 "Is the existing paint in good condition, without excessive peeling, flaking, or bubbling?",
-"Do we need to remove skirting for wardrobe installlation?"];
+"Do we need to remove skirting for wardrobe installlation?"]
 
 const defaultRooms=["Living Room","Kitchen","Bedroom 1","Bedroom 2","Bathroom 1","Bathroom 2","Balcony"]
 
 let roomOrder=[...defaultRooms]
-
 let data=JSON.parse(localStorage.getItem("validatorData")||"{}")
 
-/* 🔧 DATA NORMALIZATION (CRITICAL FIX) */
 function normalizeData(){
-if(!data.project) data.project={}
-if(!data.constraints) data.constraints={}
-if(!data.rooms) data.rooms={}
-
+if(!data.rooms)data.rooms={}
 defaultRooms.forEach(r=>{
-if(!data.rooms[r]) data.rooms[r]={}
-if(!data.rooms[r].room) data.rooms[r].room={}
-if(!data.rooms[r].wall) data.rooms[r].wall={}
-if(!data.rooms[r].wallSel) data.rooms[r].wallSel={}
+if(!data.rooms[r])data.rooms[r]={room:{},wall:{},wallSel:{}}
 })
 }
-
 normalizeData()
 
 function saveData(){
+data.project={pid:pid.value,cx:cx.value,city:city.value,address:address.value,society:society.value,flat:flat.value,floorNo:floorNo.value}
+data.constraints={}
 
-data.project={
-pid:document.getElementById("pid").value,
-cx:document.getElementById("cx").value,
-city:document.getElementById("city").value,
-address:document.getElementById("address").value,
-society:document.getElementById("society").value,
-flat:document.getElementById("flat").value,
-floorNo:document.getElementById("floorNo").value
-}
-
-data.constraints={
-serviceLiftUsage:document.getElementById("serviceLiftUsage").value,
-loadingArea:document.getElementById("loadingArea").value,
-debrisDumping:document.getElementById("debrisDumping").value,
-vehicleEntry:document.getElementById("vehicleEntry").value,
-societyRestrictions:document.getElementById("societyRestrictions").value
-}
-
+societyQuestions.forEach(q=>{
+let el=document.getElementById(q.key)
+if(el) data.constraints[q.key]=el.value
+})
 localStorage.setItem("validatorData",JSON.stringify(data))
 }
 
 function renderTabs(activeRoom){
-document.getElementById("roomTabs").innerHTML=
-roomOrder.map(r=>`
+
+const container = document.getElementById("roomTabs")
+
+container.innerHTML = roomOrder.map(r=>`
 <span class="roomTab" 
-style="${r===activeRoom?'background:#1e3d8f;color:white':''}"
-onclick="openRoom('${r}')">${r}</span>`).join("")
+style="${r===activeRoom ? 'background:#1e3d8f;color:white' : ''}"
+onclick="openRoom('${r}')">
+${r}
+</span>
+`).join("");
+
+}
+
+function scrollToNext(currentDiv){
+let all=document.querySelectorAll(".statusPending")
+for(let el of all){
+if(el.offsetTop>currentDiv.offsetTop){
+el.scrollIntoView({behavior:"smooth",block:"center"})
+break
+}
+}
+}
+
+/* 🔥 TOGGLE FUNCTION */
+function createToggle(value,onChange){
+let div=document.createElement("div")
+div.className="toggleGroup"
+
+let options=["Yes","No","NA"]
+
+options.forEach(opt=>{
+let btn=document.createElement("div")
+btn.className="toggleBtn"
+btn.innerText=opt
+
+btn.onclick=()=>{
+div.querySelectorAll(".toggleBtn").forEach(b=>b.classList.remove("active","yes","no","na"))
+
+btn.classList.add("active")
+btn.classList.add(opt.toLowerCase())
+
+onChange(opt)
+}
+
+if(value===opt){
+btn.classList.add("active")
+btn.classList.add(opt.toLowerCase())
+}
+
+div.appendChild(btn)
+})
+
+return div
+}
+
+function applyAllWalls(value, room){
+const r=data.rooms[room]
+wallQuestions.forEach(q=>{r.wall[q]=value})
+saveData()
+openRoom(room)
 }
 
 function openRoom(room){
 
-/* 🔧 HARDENED STRUCTURE */
-if(!data.rooms[room]) data.rooms[room]={}
-if(!data.rooms[room].room) data.rooms[room].room={}
-if(!data.rooms[room].wall) data.rooms[room].wall={}
-if(!data.rooms[room].wallSel) data.rooms[room].wallSel={}
-
 const r=data.rooms[room]
-
 renderTabs(room)
 
 const container=document.getElementById("roomForm")
 container.innerHTML=""
 
-let title=document.createElement("h3")
-title.textContent=room
-container.appendChild(title)
+function createAccordion(title){
+let acc=document.createElement("div")
+acc.className="accordion"
+acc.textContent=title
+let content=document.createElement("div")
+content.className="accordionContent"
+acc.onclick=()=>{content.style.display=content.style.display==="block"?"none":"block"}
+container.appendChild(acc)
+container.appendChild(content)
+return content
+}
 
-container.appendChild(sectionHeader("Wall Questions"))
+/* WALL */
+let wallSection=createAccordion("Wall Questions")
+
+wallSection.innerHTML+=`
+<button onclick="applyAllWalls('Yes','${room}')">Apply Yes to All</button>
+<button onclick="applyAllWalls('No','${room}')">Apply No to All</button>
+`
 
 wallQuestions.forEach(q=>{
 let div=document.createElement("div")
-div.className="question"
+div.className="questionBlock "+(r.wall[q]?"statusAnswered":"statusPending")
 
 let label=document.createElement("label")
 label.textContent=q
 
-let select=createYesNo(r.wall[q], val=>{
+let toggle=createToggle(r.wall[q], val=>{
 r.wall[q]=val
 saveData()
+div.className="questionBlock "+(val?"statusAnswered":"statusPending")
+scrollToNext(div)
 })
 
 let wallBox=document.createElement("div")
 wallBox.className="wallBox"
 
 walls.forEach(w=>{
-let lbl=document.createElement("label")
 let cb=document.createElement("input")
 cb.type="checkbox"
-
 let arr=r.wallSel[q]||[]
 cb.checked=arr.includes(w)
 
 cb.onchange=()=>{
 let arr=r.wallSel[q]||[]
-if(cb.checked){
-if(!arr.includes(w)) arr.push(w)
-}else{
-arr=arr.filter(x=>x!==w)
-}
+if(cb.checked){if(!arr.includes(w))arr.push(w)}
+else{arr=arr.filter(x=>x!==w)}
 r.wallSel[q]=arr
 saveData()
 }
-
-lbl.appendChild(cb)
-lbl.append(w)
-wallBox.appendChild(lbl)
+wallBox.append(cb,w)
 })
 
-let textarea=createTextarea(r.wall[q+"-c"], val=>{
-r.wall[q+"-c"]=val
-saveData()
+let textarea=document.createElement("textarea")
+textarea.value=r.wall[q+"-c"]||""
+
+div.append(label,toggle,wallBox,textarea)
+wallSection.appendChild(div)
 })
 
-div.append(label,select,wallBox,textarea)
-container.appendChild(div)
-})
-
-container.appendChild(sectionHeader("Room Questions"))
+/* ROOM */
+let roomSection=createAccordion("Room Questions")
 
 roomQuestions.forEach(q=>{
 let div=document.createElement("div")
+div.className="questionBlock "+(r.room[q]?"statusAnswered":"statusPending")
 
 let label=document.createElement("label")
 label.textContent=q
 
-let select=createYesNo(r.room[q], val=>{
+let toggle=createToggle(r.room[q], val=>{
 r.room[q]=val
 saveData()
+div.className="questionBlock "+(val?"statusAnswered":"statusPending")
+scrollToNext(div)
 })
 
-let textarea=createTextarea(r.room[q+"-c"], val=>{
-r.room[q+"-c"]=val
-saveData()
+let textarea=document.createElement("textarea")
+textarea.value=r.room[q+"-c"]||""
+
+div.append(label,toggle,textarea)
+roomSection.appendChild(div)
 })
 
-div.append(label,select,textarea)
-container.appendChild(div)
-})
+/* ✅ NEXT ROOM BUTTON (CORRECT PLACE) */
+let index = roomOrder.indexOf(room)
 
+let nextBtn=document.createElement("button")
+
+if(index === roomOrder.length - 1){
+nextBtn.innerText="Finish ✔"
+}else{
+nextBtn.innerText=`Next: ${roomOrder[index+1]} →`
 }
 
-function sectionHeader(text){
-let el=document.createElement("div")
-el.className="sectionHeader"
-el.textContent=text
-return el
-}
+nextBtn.style.marginTop="10px"
 
-function createYesNo(value,onchange){
-let select=document.createElement("select")
-select.innerHTML="<option></option><option>Yes</option><option>No</option>"
-select.value=value||""
-select.onchange=()=>onchange(select.value)
-return select
-}
+nextBtn.onclick=()=>goToNextRoom(room)
 
-function createTextarea(value,onchange){
-let t=document.createElement("textarea")
-t.value=value||""
-t.onchange=()=>onchange(t.value)
-return t
+container.appendChild(nextBtn)
+
 }
 
 function generateExcel(){
-
-// Ensure latest values are saved before export
 saveData()
-
 let rows=[]
-
 Object.keys(data.rooms).forEach(room=>{
 let r=data.rooms[room]
-
 Object.entries(r.wall).forEach(([k,v])=>{
 if(k.endsWith("-c")) return
-
-rows.push({
-...data.project,
-...data.constraints,
-Room:room,
-Section:"Wall",
-Item:k,
-Value:v,
-Walls:(r.wallSel[k]||[]).join(","),
-Comments:r.wall[k+"-c"]||""
+rows.push({...data.project,...data.constraints,Room:room,Section:"Wall",Item:k,Value:v,Walls:(r.wallSel[k]||[]).join(","),Comments:r.wall[k+"-c"]||""})
 })
-})
-
 Object.entries(r.room).forEach(([k,v])=>{
 if(k.endsWith("-c")) return
-
-rows.push({
-...data.project,
-...data.constraints,
-Room:room,
-Section:"Room",
-Item:k,
-Value:v,
-Comments:r.room[k+"-c"]||""
+rows.push({...data.project,...data.constraints,Room:room,Section:"Room",Item:k,Value:v,Comments:r.room[k+"-c"]||""})
 })
 })
-
-})
-
 let wb=XLSX.utils.book_new()
 let ws=XLSX.utils.json_to_sheet(rows)
-
 XLSX.utils.book_append_sheet(wb,ws,"Validation Data")
 XLSX.writeFile(wb,"site_validation.xlsx")
 }
+
 function addRoom(){
 let name=prompt("Room name")
 if(!name)return
@@ -351,17 +361,69 @@ roomOrder.push(name)
 data.rooms[name]={room:{},wall:{},wallSel:{}}
 renderTabs(name)
 }
+  function goToNextRoom(currentRoom){
 
+let index = roomOrder.indexOf(currentRoom)
+
+if(index === -1) return
+
+// If last room → alert
+if(index === roomOrder.length - 1){
+alert("All rooms completed ✅")
+return
+}
+
+let nextRoom = roomOrder[index + 1]
+
+// Open next room
+openRoom(nextRoom)
+
+// Scroll to top
+window.scrollTo({top:0,behavior:"smooth"})
+}
+function renderSociety(){
+
+const container=document.getElementById("societyForm")
+container.innerHTML=""
+
+societyQuestions.forEach(q=>{
+
+let div=document.createElement("div")
+div.className="formGroup"
+
+let label=document.createElement("label")
+label.className="formLabel"
+label.innerText = q.label
+
+let input
+
+if(q.type==="textarea"){
+input=document.createElement("textarea")
+}else{
+input=document.createElement("select")
+input.innerHTML="<option></option>" + q.options.map(o=>`<option>${o}</option>`).join("")
+}
+
+input.id=q.key
+input.value=(data.constraints && data.constraints[q.key]) || ""
+
+input.onchange=saveData
+
+div.append(label,input)
+container.appendChild(div)
+
+})
+
+}
 function resetData(){
 localStorage.clear()
 location.reload()
 }
 
-/* INIT */
-document.addEventListener("DOMContentLoaded", function(){
-normalizeData()
+document.addEventListener("DOMContentLoaded",()=>{
 renderTabs(defaultRooms[0])
 openRoom(defaultRooms[0])
+renderSociety()
 })
 
 </script>
