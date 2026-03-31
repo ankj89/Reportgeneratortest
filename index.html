@@ -9,13 +9,14 @@
 <style>
 body{font-family:Arial;background:#f4f6fb;padding:20px}
 .card{background:#fff;padding:20px;border-radius:10px;max-width:600px;margin:auto}
-button{padding:10px 16px;background:#1e3d8f;color:white;border:none;border-radius:6px;margin-top:10px;cursor:pointer}
+button{padding:10px 16px;background:#1e3d8f;color:white;border:none;border-radius:6px;margin-top:10px;cursor:pointer;margin-right:8px}
 .section{margin-top:30px}
 .logo{font-size:22px;font-weight:bold;margin-bottom:20px}
 table{border-collapse:collapse;width:100%}
 th,td{border:1px solid #ccc;padding:8px}
 th{background:#1e3d8f;color:#fff}
 .header{background:#eef2ff;font-weight:bold}
+.hidden{display:none}
 </style>
 </head>
 
@@ -26,26 +27,34 @@ th{background:#1e3d8f;color:#fff}
 
 <input type="file" id="fileInput" accept=".xlsx" />
 <br>
+
+<!-- Stage 1 -->
 <button id="generateBtn">Generate Report</button>
+<button id="finalizeBtn" class="hidden">Finalize Insights</button>
+
+<!-- Stage 2 -->
+<div id="postFinalize" class="hidden">
 <button id="pdfBtn">Download PDF</button>
-<button id="finalizeBtn">Finalize Insights</button>
+<button id="excelBtn">Download Excel</button>
+<button id="htmlBtn">Generate HTML Link</button>
+</div>
+
 </div>
 
 <div id="reportPreview"></div>
 
 <script>
 
-window.onerror = function(msg, url, line){
-alert("JS Error: " + msg + " at line " + line)
-}
-
 function bindEvents(){
   document.getElementById("generateBtn")?.addEventListener("click", processFile)
-  document.getElementById("pdfBtn")?.addEventListener("click", downloadPDF)
   document.getElementById("finalizeBtn")?.addEventListener("click", finalizeReport)
+  document.getElementById("pdfBtn")?.addEventListener("click", downloadPDF)
+  document.getElementById("excelBtn")?.addEventListener("click", downloadExcel)
+  document.getElementById("htmlBtn")?.addEventListener("click", generateHTMLLink)
 }
 
 let globalReportHTML = ""
+let insightsData = []
 
 function processFile(){
 
@@ -55,8 +64,6 @@ if(!file){ alert("Upload file first"); return }
 let reader = new FileReader()
 
 reader.onload = function(e){
-
-try{
 
 let data = new Uint8Array(e.target.result)
 let wb = XLSX.read(data, {type:'array'})
@@ -68,7 +75,6 @@ let raw = XLSX.utils.sheet_to_json(rawSheet)
 let meas = measSheet ? XLSX.utils.sheet_to_json(measSheet) : []
 
 let rooms = [...new Set(raw.map(r=>r.Room))]
-
 let project = raw[0] || {}
 
 let html = `<div id="reportContainer">`
@@ -86,7 +92,6 @@ html += `<tr><td>${k}</td><td>${project[k]}</td></tr>`
 
 html += `</table></div>`
 
-/* VALIDATION MATRIX */
 html += `<div class="section"><h2>Validation Matrix</h2><table>`
 html += `<tr><th>Question</th>`
 rooms.forEach(r=>html+=`<th>${r}</th>`)
@@ -124,7 +129,6 @@ html += `</tr>`
 
 html += `</table></div>`
 
-/* INSIGHTS */
 html += `<div class="section"><h2>Insights</h2><table id="insightTable">`
 html += `<tr><th>SNo</th>`
 rooms.forEach(r=>html+=`<th>${r}</th>`)
@@ -132,50 +136,26 @@ html += `</tr>`
 
 for(let i=1;i<=25;i++){
 html += `<tr><td>${i}</td>`
-rooms.forEach((r)=>{
-html += `<td contenteditable="true" data-room="${r}" data-row="${i}" style="height:50px"></td>`
+rooms.forEach(r=>{
+html += `<td contenteditable="true"></td>`
 })
 html += `</tr>`
-}
-
-html += `</table></div>`
-
-/* MEASUREMENTS */
-html += `<div class="section"><h2>Measurements</h2><table>`
-
-if(meas.length){
-let keys = Object.keys(meas[0]).filter(k=>k!=="Room")
-
-html += `<tr><th>Measurement</th>`
-rooms.forEach(r=>html+=`<th>${r}</th>`)
-html += `</tr>`
-
-keys.forEach(k=>{
-html += `<tr><td>${k}</td>`
-rooms.forEach(room=>{
-let rec = meas.find(m=>m.Room===room)
-html += `<td>${rec ? rec[k] || "" : ""}</td>`
-})
-html += `</tr>`
-})
 }
 
 html += `</table></div>`
 
 html += `</div>`
 
-/* Render safely */
 let container = document.getElementById("reportPreview")
 container.innerHTML = html
 
 globalReportHTML = html
 
-alert("Report Ready")
+// UI FLOW
+document.getElementById("generateBtn").classList.add("hidden")
+document.getElementById("finalizeBtn").classList.remove("hidden")
 
-}catch(err){
-console.error(err)
-alert("Error: " + err.message)
-}
+alert("Report Generated → Fill Insights and click Finalize")
 
 }
 
@@ -183,75 +163,61 @@ reader.readAsArrayBuffer(file)
 
 }
 
-function downloadPDF(){
-
-let report = document.getElementById("reportContainer")
-
-if(!report){
-alert("Generate report first")
-return
-}
-
-report.querySelectorAll("[contenteditable]").forEach(el=>{
-el.removeAttribute("contenteditable")
-})
-
-let content = report.outerHTML
-
-let w = window.open()
-
-w.document.write(`
-<html>
-<head>
-<title>Validation Report</title>
-<style>
-body{font-family:Arial;padding:20px}
-table{border-collapse:collapse;width:100%}
-th,td{border:1px solid #000;padding:8px}
-th{background:#1e3d8f;color:#fff}
-.section{margin-top:30px}
-.header{background:#eef2ff;font-weight:bold}
-</style>
-</head>
-<body>
-${content}
-</body>
-</html>
-`)
-
-setTimeout(()=>{
-w.print()
-},500)
-
-}
-
 function finalizeReport(){
 
 let table = document.getElementById("insightTable")
+let headers = Array.from(table.rows[0].cells).map(c=>c.innerText)
 
-if(!table){
-alert("Generate report first")
-return
-}
-
-let insightsData = []
+insightsData = []
 
 for(let i=1;i<table.rows.length;i++){
 let row = table.rows[i]
-let obj = {SNo: row.cells[0].innerText}
+let obj = {}
 
-for(let j=1;j<row.cells.length;j++){
-let room = table.rows[0].cells[j].innerText
-obj[room] = row.cells[j].innerText
+for(let j=0;j<row.cells.length;j++){
+obj[headers[j]] = row.cells[j].innerText
 }
 
 insightsData.push(obj)
 }
 
-console.log("Captured Insights:", insightsData)
-alert("Insights captured successfully")
+// Lock editing
+document.querySelectorAll("[contenteditable]").forEach(el=>el.removeAttribute("contenteditable"))
+
+// UI FLOW
+document.getElementById("finalizeBtn").classList.add("hidden")
+document.getElementById("postFinalize").classList.remove("hidden")
+
+alert("Insights Finalized")
 
 }
+
+function downloadPDF(){
+let content = document.getElementById("reportContainer").outerHTML
+let w = window.open()
+w.document.write(`<html><body>${content}</body></html>`)
+setTimeout(()=>w.print(),500)
+}
+
+function downloadExcel(){
+
+let ws = XLSX.utils.json_to_sheet(insightsData)
+let wb = XLSX.utils.book_new()
+XLSX.utils.book_append_sheet(wb, ws, "Insights")
+
+XLSX.writeFile(wb, "Validation_Report.xlsx")
+
+}
+
+function generateHTMLLink(){
+
+let blob = new Blob([`<html><body>${globalReportHTML}</body></html>`], {type: "text/html"})
+let url = URL.createObjectURL(blob)
+
+window.open(url)
+
+}
+
 
 document.addEventListener("DOMContentLoaded", bindEvents)
 
