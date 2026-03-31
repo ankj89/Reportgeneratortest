@@ -1,19 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validation Report Generator</title>
+
+<!-- ✅ FIX 1: Stable CDN -->
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+body{font-family:Arial;background:#f4f6fb;padding:20px}
+.card{background:#fff;padding:20px;border-radius:10px;max-width:600px;margin:auto}
+button{padding:10px 16px;background:#1e3d8f;color:white;border:none;border-radius:6px;margin-top:10px;cursor:pointer}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h2>Validation Report Generator</h2>
+
+<input type="file" id="fileInput" accept=".xlsx" />
+<br>
+<button onclick="processFile()">Generate Report</button>
+
+</div>
+
 <script>
+
+<!-- ✅ FIX 2: Global error handler -->
+window.onerror = function(msg, url, line){
+alert("JS Error: " + msg + " at line " + line)
+}
 
 function processFile(){
 
-let file = document.getElementById("fileInput").files[0]
-if(!file){ alert("Upload file first"); return }
+let fileInput = document.getElementById("fileInput")
 
+if(!fileInput.files.length){
+alert("Upload file first")
+return
+}
+
+let file = fileInput.files[0]
 let reader = new FileReader()
 
 reader.onload = function(e){
 
+try{
+
 let data = new Uint8Array(e.target.result)
 let wb = XLSX.read(data, {type:'array'})
 
-let raw = XLSX.utils.sheet_to_json(wb.Sheets["Validation Data"])
-let meas = XLSX.utils.sheet_to_json(wb.Sheets["Measurements"])
+console.log("Sheets:", wb.SheetNames)
+
+/* ✅ FIX 3: SAFE SHEET HANDLING */
+
+let rawSheet = wb.Sheets["Validation Data"] || wb.Sheets[wb.SheetNames[0]]
+let measSheet = wb.Sheets["Measurements"] || wb.Sheets[wb.SheetNames[1]]
+
+if(!rawSheet){
+alert("Validation Data sheet not found")
+return
+}
+
+let raw = XLSX.utils.sheet_to_json(rawSheet)
+let meas = measSheet ? XLSX.utils.sheet_to_json(measSheet) : []
 
 /* ---------------- COMMON ---------------- */
 
@@ -36,23 +87,18 @@ project[k] = r[k]
 let projectSheet = []
 
 Object.keys(project).forEach(k=>{
-projectSheet.push({
-Parameter:k,
-Value:project[k]
-})
+projectSheet.push({Parameter:k, Value:project[k]})
 })
 
 /* ---------------- VALIDATION MATRIX ---------------- */
 
 let combinedMatrix = []
 
-/* HEADER ROW */
 let headerRow = {Question:"Question"}
 rooms.forEach(r=>headerRow[r]=r)
 combinedMatrix.push(headerRow)
 
-/* -------- WALL -------- */
-
+/* WALL */
 combinedMatrix.push({Question:""})
 combinedMatrix.push({Question:"WALL VALIDATION"})
 
@@ -66,12 +112,7 @@ rooms.forEach(room=>{
 let rec = wallRows.find(r=>r.Room===room && r.Item===q)
 
 if(rec){
-let parts = [
-rec.Walls,
-rec.Value,
-rec.Comments
-].filter(x=>x)
-
+let parts = [rec.Walls,rec.Value,rec.Comments].filter(x=>x)
 row[room] = parts.join(" | ")
 }else{
 row[room] = ""
@@ -81,8 +122,7 @@ row[room] = ""
 combinedMatrix.push(row)
 })
 
-/* -------- ROOM -------- */
-
+/* ROOM */
 combinedMatrix.push({Question:""})
 combinedMatrix.push({Question:"ROOM VALIDATION"})
 
@@ -96,11 +136,7 @@ rooms.forEach(room=>{
 let rec = roomRows.find(r=>r.Room===room && r.Item===q)
 
 if(rec){
-let parts = [
-rec.Value,
-rec.Comments
-].filter(x=>x)
-
+let parts = [rec.Value,rec.Comments].filter(x=>x)
 row[room] = parts.join(" | ")
 }else{
 row[room] = ""
@@ -112,18 +148,16 @@ combinedMatrix.push(row)
 
 /* ---------------- INSIGHTS ---------------- */
 
-let insights = []
-
-rooms.forEach(room=>{
-insights.push({
-Room:room,
-Insights:""
-})
-})
+let insights = rooms.map(r=>({Room:r, Insights:""}))
 
 /* ---------------- MEASUREMENTS ---------------- */
 
 let measurementSheet = meas
+
+/* ✅ FIX 4: SAFE EMPTY MEASUREMENTS */
+if(measurementSheet.length === 0){
+measurementSheet = [{}]
+}
 
 /* ---------------- EXPORT ---------------- */
 
@@ -134,7 +168,7 @@ let ws2 = XLSX.utils.json_to_sheet(combinedMatrix)
 let ws3 = XLSX.utils.json_to_sheet(insights)
 let ws4 = XLSX.utils.json_to_sheet(measurementSheet)
 
-/* 🔥 STYLING HELPERS */
+/* FORMATTING */
 
 function setColWidth(ws, count, width=30){
 ws['!cols'] = Array(count).fill({wch:width})
@@ -147,8 +181,6 @@ if(!ws[cell].s) ws[cell].s={}
 ws[cell].s.alignment = {wrapText:true, vertical:"top"}
 })
 }
-
-/* APPLY STYLING */
 
 setColWidth(ws1,2,35)
 setColWidth(ws2,rooms.length+1,35)
@@ -169,10 +201,25 @@ XLSX.utils.book_append_sheet(newWB, ws4, "Measurements")
 
 XLSX.writeFile(newWB, "Validation_Report.xlsx")
 
+alert("✅ Report Generated Successfully")
+
+}catch(err){
+console.error(err)
+alert("Error processing file. Check console (F12)")
+}
+
 }
 
 reader.readAsArrayBuffer(file)
 
 }
 
+/* ✅ FIX 5: LOAD CHECK */
+document.addEventListener("DOMContentLoaded", ()=>{
+console.log("App Loaded ✅")
+})
+
 </script>
+
+</body>
+</html>
