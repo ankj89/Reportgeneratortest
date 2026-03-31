@@ -2,29 +2,36 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Validation Report Generator1</title>
+<title>Validation Report Generator</title>
 
-<!-- ✅ FIX 1: Stable CDN -->
 <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 body{font-family:Arial;background:#f4f6fb;padding:20px}
 .card{background:#fff;padding:20px;border-radius:10px;max-width:600px;margin:auto}
 button{padding:10px 16px;background:#1e3d8f;color:white;border:none;border-radius:6px;margin-top:10px;cursor:pointer}
+.section{margin-top:30px}
+.logo{font-size:22px;font-weight:bold;margin-bottom:20px}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid #ccc;padding:8px}
+th{background:#1e3d8f;color:#fff}
+.header{background:#eef2ff;font-weight:bold}
 </style>
 </head>
 
 <body>
 
 <div class="card">
-<h2>Validation Report Generator 1.0</h2>
+<h2>Validation Report Generator 2.0</h2>
 
 <input type="file" id="fileInput" accept=".xlsx" />
 <br>
 <button id="generateBtn">Generate Report</button>
 <button id="pdfBtn">Download PDF</button>
-  
+<button id="finalizeBtn">Finalize Insights</button>
 </div>
+
+<div id="reportPreview"></div>
 
 <script>
 
@@ -32,7 +39,13 @@ window.onerror = function(msg, url, line){
 alert("JS Error: " + msg + " at line " + line)
 }
 
-let globalReportHTML = ""  // for PDF
+function bindEvents(){
+  document.getElementById("generateBtn")?.addEventListener("click", processFile)
+  document.getElementById("pdfBtn")?.addEventListener("click", downloadPDF)
+  document.getElementById("finalizeBtn")?.addEventListener("click", finalizeReport)
+}
+
+let globalReportHTML = ""
 
 function processFile(){
 
@@ -56,22 +69,14 @@ let meas = measSheet ? XLSX.utils.sheet_to_json(measSheet) : []
 
 let rooms = [...new Set(raw.map(r=>r.Room))]
 
-/* ---------------- PROJECT ---------------- */
-
 let project = raw[0] || {}
 
-/* ---------------- BUILD HTML REPORT ---------------- */
+let html = `<div id="reportContainer">`
 
-let html = `
-<div id="reportContainer">
+html += `<div class="logo">SITE VALIDATION REPORT</div>`
 
-<div class="logo">SITE VALIDATION REPORT</div>
-
-<div class="section">
-<h2>Project & Society</h2>
-<table>
-<tr><th>Parameter</th><th>Value</th></tr>
-`
+html += `<div class="section"><h2>Project & Society</h2><table>`
+html += `<tr><th>Parameter</th><th>Value</th></tr>`
 
 Object.keys(project).forEach(k=>{
 if(!["Room","Section","Item","Value"].includes(k)){
@@ -81,10 +86,8 @@ html += `<tr><td>${k}</td><td>${project[k]}</td></tr>`
 
 html += `</table></div>`
 
-/* ---------------- VALIDATION MATRIX ---------------- */
-
+/* VALIDATION MATRIX */
 html += `<div class="section"><h2>Validation Matrix</h2><table>`
-
 html += `<tr><th>Question</th>`
 rooms.forEach(r=>html+=`<th>${r}</th>`)
 html += `</tr>`
@@ -121,17 +124,15 @@ html += `</tr>`
 
 html += `</table></div>`
 
-/* ---------------- INSIGHTS ---------------- */
-<td contenteditable="true"></td>
+/* INSIGHTS */
 html += `<div class="section"><h2>Insights</h2><table id="insightTable">`
-
 html += `<tr><th>SNo</th>`
 rooms.forEach(r=>html+=`<th>${r}</th>`)
 html += `</tr>`
 
 for(let i=1;i<=25;i++){
 html += `<tr><td>${i}</td>`
-rooms.forEach((r,idx)=>{
+rooms.forEach((r)=>{
 html += `<td contenteditable="true" data-room="${r}" data-row="${i}" style="height:50px"></td>`
 })
 html += `</tr>`
@@ -139,8 +140,7 @@ html += `</tr>`
 
 html += `</table></div>`
 
-/* ---------------- MEASUREMENTS ---------------- */
-
+/* MEASUREMENTS */
 html += `<div class="section"><h2>Measurements</h2><table>`
 
 if(meas.length){
@@ -152,8 +152,9 @@ html += `</tr>`
 
 keys.forEach(k=>{
 html += `<tr><td>${k}</td>`
-meas.forEach(r=>{
-html += `<td>${r[k]||""}</td>`
+rooms.forEach(room=>{
+let rec = meas.find(m=>m.Room===room)
+html += `<td>${rec ? rec[k] || "" : ""}</td>`
 })
 html += `</tr>`
 })
@@ -163,17 +164,17 @@ html += `</table></div>`
 
 html += `</div>`
 
-/* STORE FOR PDF */
+/* Render safely */
+let container = document.getElementById("reportPreview")
+container.innerHTML = html
+
 globalReportHTML = html
 
-/* OPEN PREVIEW */
-document.body.innerHTML = html
-
-alert("✅ Report Ready (Use Download PDF button)")
+alert("Report Ready")
 
 }catch(err){
 console.error(err)
-alert("Error processing file")
+alert("Error: " + err.message)
 }
 
 }
@@ -182,7 +183,6 @@ reader.readAsArrayBuffer(file)
 
 }
 
-/* PDF DOWNLOAD */
 function downloadPDF(){
 
 let report = document.getElementById("reportContainer")
@@ -192,12 +192,10 @@ alert("Generate report first")
 return
 }
 
-/* Disable editing */
 report.querySelectorAll("[contenteditable]").forEach(el=>{
 el.removeAttribute("contenteditable")
 })
 
-/* Clone clean content */
 let content = report.outerHTML
 
 let w = window.open()
@@ -226,7 +224,7 @@ w.print()
 },500)
 
 }
-  
+
 function finalizeReport(){
 
 let table = document.getElementById("insightTable")
@@ -239,7 +237,6 @@ return
 let insightsData = []
 
 for(let i=1;i<table.rows.length;i++){
-
 let row = table.rows[i]
 let obj = {SNo: row.cells[0].innerText}
 
@@ -252,21 +249,13 @@ insightsData.push(obj)
 }
 
 console.log("Captured Insights:", insightsData)
-
-/* 🔥 OPTIONAL: Replace table with final static version */
-
-alert("Insights captured ✅ Now download PDF")
+alert("Insights captured successfully")
 
 }
-document.addEventListener("DOMContentLoaded", ()=>{
 
-document.getElementById("generateBtn").addEventListener("click", processFile)
-document.getElementById("pdfBtn").addEventListener("click", downloadPDF)
+document.addEventListener("DOMContentLoaded", bindEvents)
 
-})
 </script>
-
-
 
 </body>
 </html>
