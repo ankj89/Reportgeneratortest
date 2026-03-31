@@ -1,29 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Validation Report Generator</title>
-
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
-<style>
-body{font-family:Arial;background:#f4f6fb;padding:20px}
-.card{background:#fff;padding:20px;border-radius:10px;max-width:600px;margin:auto}
-button{padding:10px 16px;background:#1e3d8f;color:white;border:none;border-radius:6px;margin-top:10px}
-</style>
-</head>
-
-<body>
-
-<div class="card">
-<h2>Validation Report Generator</h2>
-
-<input type="file" id="fileInput" accept=".xlsx" />
-<br>
-<button onclick="processFile()">Generate Report</button>
-
-</div>
-
 <script>
 
 function processFile(){
@@ -41,11 +15,16 @@ let wb = XLSX.read(data, {type:'array'})
 let raw = XLSX.utils.sheet_to_json(wb.Sheets["Validation Data"])
 let meas = XLSX.utils.sheet_to_json(wb.Sheets["Measurements"])
 
-/* ---------------- PROJECT TAB ---------------- */
+/* ---------------- COMMON ---------------- */
+
+let rooms = [...new Set(raw.map(r=>r.Room))]
+
+/* ---------------- PROJECT (COLUMN FORMAT) ---------------- */
 
 let ignoreCols = ["Room","Section","Item","Value","Walls","Comments"]
 
 let project = {}
+
 raw.forEach(r=>{
 Object.keys(r).forEach(k=>{
 if(!ignoreCols.includes(k) && !project[k]){
@@ -54,43 +33,61 @@ project[k] = r[k]
 })
 })
 
-let projectSheet = [project]
+let projectSheet = []
 
-/* ---------------- WALL MATRIX ---------------- */
+Object.keys(project).forEach(k=>{
+projectSheet.push({
+Parameter:k,
+Value:project[k]
+})
+})
+
+/* ---------------- VALIDATION MATRIX ---------------- */
+
+let combinedMatrix = []
+
+/* HEADER ROW */
+let headerRow = {Question:"Question"}
+rooms.forEach(r=>headerRow[r]=r)
+combinedMatrix.push(headerRow)
+
+/* -------- WALL -------- */
+
+combinedMatrix.push({Question:""})
+combinedMatrix.push({Question:"WALL VALIDATION"})
 
 let wallRows = raw.filter(r=>r.Section==="Wall")
+let wallQuestions = [...new Set(wallRows.map(r=>r.Item))]
 
-let rooms = [...new Set(raw.map(r=>r.Room))]
-let questions = [...new Set(wallRows.map(r=>r.Item))]
-
-let wallMatrix = []
-
-questions.forEach(q=>{
+wallQuestions.forEach(q=>{
 let row = {Question:q}
 
 rooms.forEach(room=>{
 let rec = wallRows.find(r=>r.Room===room && r.Item===q)
 
 if(rec){
-let val = rec.Value || ""
-let wall = rec.Walls || ""
-let com = rec.Comments || ""
+let parts = [
+rec.Walls,
+rec.Value,
+rec.Comments
+].filter(x=>x)
 
-row[room] = `${wall} | ${val} | ${com}`.trim()
+row[room] = parts.join(" | ")
 }else{
 row[room] = ""
 }
 })
 
-wallMatrix.push(row)
+combinedMatrix.push(row)
 })
 
-/* ---------------- ROOM MATRIX ---------------- */
+/* -------- ROOM -------- */
+
+combinedMatrix.push({Question:""})
+combinedMatrix.push({Question:"ROOM VALIDATION"})
 
 let roomRows = raw.filter(r=>r.Section==="Room")
 let roomQuestions = [...new Set(roomRows.map(r=>r.Item))]
-
-let roomMatrix = []
 
 roomQuestions.forEach(q=>{
 let row = {Question:q}
@@ -99,38 +96,76 @@ rooms.forEach(room=>{
 let rec = roomRows.find(r=>r.Room===room && r.Item===q)
 
 if(rec){
-let val = rec.Value || ""
-let com = rec.Comments || ""
+let parts = [
+rec.Value,
+rec.Comments
+].filter(x=>x)
 
-row[room] = `${val} | ${com}`.trim()
+row[room] = parts.join(" | ")
 }else{
 row[room] = ""
 }
 })
 
-roomMatrix.push(row)
+combinedMatrix.push(row)
 })
 
 /* ---------------- INSIGHTS ---------------- */
 
-let insights = rooms.map(r=>({
-Room:r,
+let insights = []
+
+rooms.forEach(room=>{
+insights.push({
+Room:room,
 Insights:""
-}))
+})
+})
 
 /* ---------------- MEASUREMENTS ---------------- */
 
-let measurements = meas
+let measurementSheet = meas
 
 /* ---------------- EXPORT ---------------- */
 
 let newWB = XLSX.utils.book_new()
 
-XLSX.utils.book_append_sheet(newWB, XLSX.utils.json_to_sheet(projectSheet), "Project & Society")
-XLSX.utils.book_append_sheet(newWB, XLSX.utils.json_to_sheet(wallMatrix), "Wall Matrix")
-XLSX.utils.book_append_sheet(newWB, XLSX.utils.json_to_sheet(roomMatrix), "Room Matrix")
-XLSX.utils.book_append_sheet(newWB, XLSX.utils.json_to_sheet(insights), "Insights")
-XLSX.utils.book_append_sheet(newWB, XLSX.utils.json_to_sheet(measurements), "Measurements")
+let ws1 = XLSX.utils.json_to_sheet(projectSheet)
+let ws2 = XLSX.utils.json_to_sheet(combinedMatrix)
+let ws3 = XLSX.utils.json_to_sheet(insights)
+let ws4 = XLSX.utils.json_to_sheet(measurementSheet)
+
+/* 🔥 STYLING HELPERS */
+
+function setColWidth(ws, count, width=30){
+ws['!cols'] = Array(count).fill({wch:width})
+}
+
+function wrapText(ws){
+Object.keys(ws).forEach(cell=>{
+if(cell[0]==="!") return
+if(!ws[cell].s) ws[cell].s={}
+ws[cell].s.alignment = {wrapText:true, vertical:"top"}
+})
+}
+
+/* APPLY STYLING */
+
+setColWidth(ws1,2,35)
+setColWidth(ws2,rooms.length+1,35)
+setColWidth(ws3,2,40)
+setColWidth(ws4,Object.keys(measurementSheet[0]||{}).length,25)
+
+wrapText(ws2)
+wrapText(ws3)
+
+/* ADD SHEETS */
+
+XLSX.utils.book_append_sheet(newWB, ws1, "Project & Society")
+XLSX.utils.book_append_sheet(newWB, ws2, "Validation Matrix")
+XLSX.utils.book_append_sheet(newWB, ws3, "Insights")
+XLSX.utils.book_append_sheet(newWB, ws4, "Measurements")
+
+/* DOWNLOAD */
 
 XLSX.writeFile(newWB, "Validation_Report.xlsx")
 
@@ -141,6 +176,3 @@ reader.readAsArrayBuffer(file)
 }
 
 </script>
-
-</body>
-</html>
