@@ -17,12 +17,13 @@ button{padding:10px 16px;background:#1e3d8f;color:white;border:none;border-radiu
 <body>
 
 <div class="card">
-<h2>Validation Report Generator</h2>
+<h2>Validation Report Generator 1.0</h2>
 
 <input type="file" id="fileInput" accept=".xlsx" />
 <br>
 <button onclick="processFile()">Generate Report</button>
 <button onclick="downloadPDF()">Download PDF</button>
+<button onclick="finalizeReport()">Finalize Report</button>
 </div>
 
 <script>
@@ -134,8 +135,8 @@ html += `</tr>`
 html += `</table></div>`
 
 /* ---------------- INSIGHTS ---------------- */
-
-html += `<div class="section"><h2>Insights</h2><table>`
+<td contenteditable="true"></td>
+html += `<div class="section"><h2>Insights</h2><table id="insightTable">`
 
 html += `<tr><th>SNo</th>`
 rooms.forEach(r=>html+=`<th>${r}</th>`)
@@ -143,7 +144,9 @@ html += `</tr>`
 
 for(let i=1;i<=25;i++){
 html += `<tr><td>${i}</td>`
-rooms.forEach(()=>html+=`<td style="height:40px"></td>`)
+rooms.forEach((r,idx)=>{
+html += `<td contenteditable="true" data-room="${r}" data-row="${i}" style="height:50px"></td>`
+})
 html += `</tr>`
 }
 
@@ -196,14 +199,59 @@ reader.readAsArrayBuffer(file)
 /* PDF DOWNLOAD */
 function downloadPDF(){
 
-if(!globalReportHTML){
+/* Disable editing */
+document.querySelectorAll("[contenteditable]").forEach(el=>{
+el.removeAttribute("contenteditable")
+})
+
+/* Clean UI */
+document.querySelectorAll("td").forEach(td=>{
+td.style.outline = "none"
+})
+
+/* Capture LIVE content (with insights) */
+let content = document.documentElement.outerHTML
+
+let w = window.open()
+w.document.write(content)
+
+setTimeout(()=>{
+w.print()
+location.reload()
+},500)
+
+}
+  
+function finalizeReport(){
+
+let table = document.getElementById("insightTable")
+
+if(!table){
 alert("Generate report first")
 return
 }
 
-let w = window.open()
-w.document.write(globalReportHTML)
-w.print()
+let insightsData = []
+
+for(let i=1;i<table.rows.length;i++){
+
+let row = table.rows[i]
+let obj = {SNo: row.cells[0].innerText}
+
+for(let j=1;j<row.cells.length;j++){
+let room = table.rows[0].cells[j].innerText
+obj[room] = row.cells[j].innerText
+}
+
+insightsData.push(obj)
+}
+
+console.log("Captured Insights:", insightsData)
+
+/* 🔥 OPTIONAL: Replace table with final static version */
+
+alert("Insights captured ✅ Now download PDF")
+
 }
 
 </script>
