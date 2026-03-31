@@ -207,10 +207,69 @@ document.getElementById("saveBtn").classList.remove("hidden")
 }
 
 function downloadPDF(){
-let content = document.getElementById("reportContainer").outerHTML
-let w = window.open()
-w.document.write(`<html><body>${content}</body></html>`)
-setTimeout(()=>w.print(),500)
+  const content = document.getElementById("reportContainer").outerHTML;
+  const w = window.open();
+
+  w.document.write(`
+  <html>
+  <head>
+  <title>Validation Report</title>
+  <style>
+    body{font-family:Arial, Helvetica, sans-serif; padding:24px; color:#111}
+
+    h2{margin:0 0 10px 0}
+
+    .logo{font-size:22px;font-weight:bold;margin-bottom:20px}
+
+    .section{page-break-before:always; margin-top:24px}
+    .section:first-child{page-break-before:auto}
+
+    table{
+      border-collapse:collapse;
+      width:100%;
+      table-layout:fixed;
+      margin-top:10px;
+    }
+
+    th, td{
+      border:1.5px solid #000;
+      padding:8px 10px;
+      font-size:12px;
+      vertical-align:top;
+      word-wrap:break-word;
+      white-space:pre-wrap;
+    }
+
+    th{
+      background:#1e3d8f;
+      color:#fff;
+      font-weight:bold;
+      text-align:left;
+    }
+
+    .header td{
+      background:#e6ecff;
+      font-weight:bold;
+      text-align:left;
+    }
+
+    /* Improve readability */
+    tr:nth-child(even) td{ background:#fafbff }
+
+    /* Prevent row breaking awkwardly */
+    tr{ page-break-inside:avoid }
+
+  </style>
+  </head>
+  <body>
+  ${content}
+  </body>
+  </html>
+  `);
+
+  setTimeout(()=>{
+    w.print();
+  },500);
 }
 
 function downloadExcel(){
