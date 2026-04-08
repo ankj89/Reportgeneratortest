@@ -61,38 +61,27 @@ type:"wall",
 condition:{itemIncludes:"load-bearing",valueEquals:"Yes"},
 output:(matches)=>{
 let walls = matches.map(m=>m.Walls).filter(Boolean);
-return {text:`RCC walls (${walls.join(", ")}) detected. No demolition or chiselling allowed.Wall panelling required for any electrcial works.`,severity:"HIGH",category:"STRUCTURAL"};
+return {text:`RCC walls (${walls.join(", ")}) detected. No demolition or chiselling allowed. Wall panelling required for any electrical works.`,severity:"HIGH",category:"STRUCTURAL"};
 }
 },
-/* ---------------- STRUCTURAL CRACK ---------------- */
 {
 id:"STRUCTURAL_CRACK",
 type:"wall",
 condition:{itemIncludes:"structural crack",valueEquals:"Yes"},
 output:(matches)=>{
-
 let walls = matches.map(m => m.Walls).filter(Boolean);
-
 if(!walls.length) return null;
-
-return {text:`Structural crack observed on walls ${walls.join(", ")}. Need inspection and solution by structural engineer (under Cx scope).`,severity:"HIGH",category:"STRUCTURAL"};
-
+return {text:`Structural crack observed on walls ${walls.join(", ")}. Structural engineer intervention required (Cx scope).`,severity:"HIGH",category:"STRUCTURAL"};
 }
 },
-
-/* ---------------- HAIRLINE CRACK ---------------- */
 {
 id:"HAIRLINE_CRACK",
 type:"wall",
 condition:{itemIncludes:"hairline crack",valueEquals:"Yes"},
 output:(matches)=>{
-
 let walls = matches.map(m => m.Walls).filter(Boolean);
-
 if(!walls.length) return null;
-
-return {text:`Hairline cracks observed on walls ${walls.join(", ")}. Plaster damage present, re-plastering will be required.`,severity:"HIGH",category:"STRUCTURAL"};
-
+return {text:`Hairline cracks on walls ${walls.join(", ")}. Re-plastering required.`,severity:"HIGH",category:"STRUCTURAL"};
 }
 },
 {
@@ -101,81 +90,68 @@ type:"wall",
 condition:{itemIncludes:"darker",valueEquals:"Yes"},
 output:(matches)=>{
 let walls = matches.map(m=>m.Walls).filter(Boolean);
-return {text:`Existing ${walls.join(", ")} walls have dark shade. Repainting with lighter shade is not recommended.`,severity:"LOW",category:"FINISHING"};
+return {text:`Existing ${walls.join(", ")} walls have dark shade. Lighter repaint not recommended.`,severity:"LOW",category:"FINISHING"};
 }
 },
 {
 id:"FALSE_CEILING",
 type:"room",
 condition:{itemIncludes:"existing false ceiling",valueEquals:"No"},
-output:()=> "Existing ceiling is not in good condition. Demolition is recommended."
+output:()=>({text:"Existing ceiling not in good condition. Demolition recommended.",severity:"MEDIUM",category:"FINISHING"})
 },
- {
+{
 id:"WIRING",
 type:"room",
 condition:{itemIncludes:"wiring",valueEquals:"No"},
-output:()=> "Existing wiring not in good condition. Re-wiring is required."
-}, 
+output:()=>({text:"Existing wiring not in good condition. Re-wiring required.",severity:"HIGH",category:"EXECUTION"})
+},
 {
 id:"WALL_SEEPAGE",
 type:"wall",
 condition:{itemIncludes:"water seepage",valueEquals:"Yes"},
-output:()=>({text:"Wall seepage / waterproofing issue observed. Damp-proof treatment required (under Cx Scope).",severity:"HIGH",category:"FINISHING"})
+output:()=>({text:"Wall seepage observed. Damp-proof treatment required (Cx scope).",severity:"HIGH",category:"FINISHING"})
 },
 {
 id:"CEILING_SEEPAGE",
 type:"room",
 condition:{itemIncludes:"water leaks or moisture",valueEquals:"Yes"},
-output:()=>({text:"Ceiling seepage / waterproofing issue observed. Suitable waterproofing treatment required (under Cx Scope).",severity:"HIGH",category:"FINISHING"})
-},  
+output:()=>({text:"Ceiling seepage observed. Waterproofing required (Cx scope).",severity:"HIGH",category:"FINISHING"})
+},
 {
 id:"CEILING_UNDULATION",
 type:"room",
-condition:{itemIncludes:"undulations/uneven surface",valueEquals:"Yes"},
-output:()=>({text:"Undulation 10-20 mm observed in true ceiling. Punning will be required. False ceiling recomended for best finish.",severity:"MEDIUM",category:"FINISHING"})
+condition:{itemIncludes:"undulations",valueEquals:"Yes"},
+output:()=>({text:"Ceiling undulation present. Punning/false ceiling required.",severity:"MEDIUM",category:"FINISHING"})
 },
 {
 id:"SCAFFOLDING",
 type:"society",
-condition:{questionIncludes:"scaffolding",valueEquals:"Yes"},
-output:()=> "Height more than 10 ft, additional scaffolding charges will be added."
+condition:{questionIncludes:"scaffold",valueEquals:"Yes"},
+output:()=>({text:"Height >10 ft. Scaffolding cost applicable.",severity:"HIGH",category:"COST"})
 },
-  /* ---------------- VEHICLE ENTRY ---------------- */
 {
 id:"VEHICLE_SMALL",
 type:"society",
-condition:{questionIncludes:"Vehicle",valueEquals:"Yes,small size"},
-output:()=> "Only small size vehicle allowed. Additional transportation charges to be added due to increasd number of trips."
+condition:{questionIncludes:"vehicle",valueEquals:"Yes,small size"},
+output:()=>({text:"Only small vehicles allowed. Additional transport cost.",severity:"MEDIUM",category:"COST"})
 },
 {
 id:"VEHICLE_NONE",
 type:"society",
-condition:{questionIncludes:"Vehicle",valueEquals:"No"},
-output:()=> "No vehicle entry allowed. Additional charges for loading/unloading will be applicable."
+condition:{questionIncludes:"vehicle",valueEquals:"No"},
+output:()=>({text:"No vehicle entry. Manual handling cost applicable.",severity:"HIGH",category:"COST"})
 },
 {
 id:"SERVICE_LIFT_NONE",
 type:"society",
-condition:{questionIncludes:"Service lift usage",valueEquals:"No"},
-output:()=> "Lift not available, additional manual lifting charges to be added appropriately."
+condition:{questionIncludes:"lift",valueEquals:"No"},
+output:()=>({text:"No service lift. Manual lifting cost.",severity:"HIGH",category:"COST"})
 },
- {
+{
 id:"LOADING_DISTANCE_FAR",
 type:"society",
-condition:{questionIncludes:"loading area",valueEquals:"More than 30 ft"},
-output:()=> "Loding unloading area is > 30ft. Additional long lead charges to be added appropriatley."
-}, 
-  {
-id:"LOADING_DISTANCE_NO",
-type:"society",
-condition:{questionIncludes:"loading area",valueEquals:"No"},
-output:()=> "Loading unloading area is not present. Additional manual lifting and long lead charges to be added appropriately."
-},  
-{
-id:"SERVICE_LIFT_LIMITED",
-type:"society",
-condition:{questionIncludes:"Service lift usage",valueEquals:"Yes,Heavy material movement Not allowed"},
-output:()=> "Lift available but heavy material movement not allowed. Manual lifting charges to be added appropriately."
+condition:{questionIncludes:"loading",valueEquals:"More than 30 ft"},
+output:()=>({text:"Loading distance >30 ft. Long lead cost applicable.",severity:"HIGH",category:"COST"})
 },
 {
 id:"ROOM_DIAGONAL",
@@ -185,8 +161,8 @@ output:(vals)=>{
 let nums=vals.map(Number).filter(v=>!isNaN(v)&&v!==0);
 if(nums.length<2) return null;
 let diff=Math.abs(nums[0]-nums[1]);
-if(diff>25) return {text:"Room diagonal deviation >25mm, walls are not in level. Plastering required <QS to add wall names>.",severity:"HIGH",category:"GEOMETRY"};
-if(diff>=10) return {text:"Room diagonal deviation 10–25mm, walls are not in level. Punning required <QS to add wall names>.",severity:"MEDIUM",category:"GEOMETRY"};
+if(diff>25) return {text:"Room geometry deviation >25mm. Plastering required.",severity:"HIGH",category:"GEOMETRY"};
+if(diff>=10) return {text:"Room geometry deviation 10–25mm. Punning required.",severity:"MEDIUM",category:"GEOMETRY"};
 return null;
 }
 },
@@ -198,17 +174,11 @@ output:(vals)=>{
 let nums=vals.map(Number).filter(v=>!isNaN(v)&&v!==0);
 if(nums.length<2) return null;
 let diff=Math.max(...nums)-Math.min(...nums);
-if(diff>25) return {text:"Ceiling variation >25mm across. Flat false ceiling required to hide the level difference. Peripheral ceiling not recomended.",severity:"HIGH",category:"LEVELS"};
-if(diff>=10) return {text:"Ceiling variation 10–25mm.Punning required.Peripheral false ceiling can be done ",severity:"MEDIUM",category:"LEVELS"};
+if(diff>25) return {text:"Ceiling variation >25mm. False ceiling required.",severity:"HIGH",category:"LEVELS"};
+if(diff>=10) return {text:"Ceiling variation 10–25mm. Punning required.",severity:"MEDIUM",category:"LEVELS"};
 return null;
 }
 },
- {
-id:"UTILITIES",
-type:"room",
-condition:{itemIncludes:"utilities",valueEquals:"Yes"},
-output:()=> "Utilities running above impacting clear height. In case of false ceiling/pelmet/curtain pocket, ply packing may be required."
-}, 
 {
 id:"CLEAR_HEIGHT",
 type:"measurement",
@@ -217,412 +187,138 @@ output:(vals)=>{
 let nums=vals.map(Number).filter(v=>!isNaN(v)&&v!==0);
 if(!nums.length) return null;
 let minVal=Math.min(...nums);
-let depth=minVal - 2750;
-return {text:`Clear height ${minVal}mm. False Ceiling avilable depth ${depth}mm (${depth<150?"False Ceiling Not recommended":"Sufficient depth available"}).`,severity:"HIGH",category:"EXECUTION"};
+let depth=2750 - minVal;
+return {text:`Clear height ${minVal}mm. Ceiling depth ${depth}mm (${depth<150?"Not recommended":"OK"}).`,severity:"HIGH",category:"EXECUTION"};
 }
-},
-{
-id:"SOFFIT_AC",
-type:"measurement",
-condition:{fields:["soffitNW","soffitEW","soffitSW","soffitWW","winSoffitNW","winSoffitEW","winSoffitSW","winSoffitWW"]},
-output:(vals,m)=>{
-let walls=[];
-const map=[["NW",m.soffitNW,m.winSoffitNW],["EW",m.soffitEW,m.winSoffitEW],["SW",m.soffitSW,m.winSoffitSW],["WW",m.soffitWW,m.winSoffitWW]];
-map.forEach(([w,d1,d2])=>{
-let v1=parseFloat(d1);let v2=parseFloat(d2);
-if((!isNaN(v1)&&v1>0&&v1<800)||(!isNaN(v2)&&v2>0&&v2<800)) walls.push(w);
-});
-if(!walls.length) return null;
-return {text:`AC space constraint on walls ${walls.join(", ")}. False Ceiling pocket may be required to accomodate split AC.`,severity:"MEDIUM",category:"EXECUTION"};
-}
-},
-{
-id:"UNDULATION",
-type:"measurement",
-condition:{fields:["undNW","undEW","undSW","undWW"]},
-output:(vals,m)=>{
-let msgs=[];
-const map=[["NW",m.undNW],["EW",m.undEW],["SW",m.undSW],["WW",m.undWW]];
-map.forEach(([w,v])=>{
-let val=parseFloat(v);
-if(isNaN(val)) return;
-if(val>3&&val<5) msgs.push(`${w} <5mm. Can be covered in putty + paint`);
-else if(val>=5&&val<20) msgs.push(`${w} 5–20mm.Punning will be required`);
-else if(val>=20) msgs.push(`${w} >20mm. Plastering will be required`);
-});
-if(!msgs.length) return null;
-return {text:`Wall undulation: ${msgs.join(", ")}`,severity:"MEDIUM",category:"FINISHING"};
-}
-},
-{
-id:"POWER",
-type:"society",
-condition:{questionIncludes:"power",valueEquals:"No"},
-output:()=>({text:"No power supply. Temporary/DG required.",severity:"HIGH",category:"EXECUTION"})
 }
 ];
 
 function runRuleEngine(rooms){
+let insights=[];
 
-let insights = [];
-
-/* ---------------- WALL RULES ---------------- */
-RULES.filter(r => r.type === "wall").forEach(rule => {
-
-rooms.forEach(room => {
-
-let matches = matrixDataRaw.filter(x =>
-x.Room === "Room" &&
-x.Section === "Wall" &&
-norm(x.Item).includes(norm(rule.condition.itemIncludes)) &&
-(x.Value || "").toLowerCase().trim() === rule.condition.valueEquals.toLowerCase()
-);
-
+/* WALL RULES */
+RULES.filter(r=>r.type==="wall").forEach(rule=>{
+rooms.forEach(room=>{
+let matches=matrixDataRaw.filter(x=>x.Room===room && x.Section==="Wall" && norm(x.Item).includes(norm(rule.condition.itemIncludes)) && (x.Value||"").toLowerCase().trim()===rule.condition.valueEquals.toLowerCase());
 if(matches.length){
+let res=rule.output(matches);
+if(res) insights.push({room,text:res.text,meta:res});
+}
+});});
 
-let res = rule.output(matches);
- /* ---------------- ROOM RULES ---------------- */
-RULES.filter(r => r.type === "room").forEach(rule => {
-
-rooms.forEach(room => {
-
-let matches = matrixDataRaw.filter(x =>
-x.Room === room &&
-x.Section === "Room" &&
-norm(x.Item).includes(norm(rule.condition.itemIncludes)) &&
-(x.Value || "").toLowerCase().trim() === rule.condition.valueEquals.toLowerCase()
-);
-
+/* ROOM RULES */
+RULES.filter(r=>r.type==="room").forEach(rule=>{
+rooms.forEach(room=>{
+let matches=matrixDataRaw.filter(x=>x.Room===room && x.Section==="Room" && norm(x.Item).includes(norm(rule.condition.itemIncludes)) && (x.Value||"").toLowerCase().trim()===rule.condition.valueEquals.toLowerCase());
 if(matches.length){
-
-let res = rule.output(matches);
-
-if(res){
-if(typeof res === "string"){
-res = {
-text: res,
-severity: "MEDIUM",
-category: "GENERAL"
-};
+let res=rule.output(matches);
+if(res) insights.push({room,text:res.text,meta:res});
 }
+});});
 
-insights.push({
-room: room,
-text: res.text,
-meta: res
-});
-}
-
-}
-
-});
-
-});
-
-/* ✅ NORMALIZE OUTPUT */
-if(res){
-if(typeof res === "string"){
-res = {
-text: res,
-severity: "MEDIUM",
-category: "GENERAL"
-};
-}
-
-insights.push({
-room: room,
-text: res.text,
-meta: res
-});
-}
-
-}
-
-});
-
-});
-
-
-/* ---------------- MEASUREMENT RULES ---------------- */
-RULES.filter(r => r.type === "measurement").forEach(rule => {
-
-measData.forEach(m => {
-
+/* MEASUREMENT */
+RULES.filter(r=>r.type==="measurement").forEach(rule=>{
+measData.forEach(m=>{
 if(!m.Room) return;
+let vals=rule.condition.fields.map(f=>m[f]||null);
+let res=rule.output(vals,m);
+if(res) insights.push({room:m.Room,text:res.text,meta:res});
+});});
 
-/* SAFE VALUE EXTRACTION */
-let vals = rule.condition.fields.map(f => {
-let v = m[f];
-return (v === undefined || v === "" || v === null) ? null : v;
-});
-
-let res = rule.output(vals, m);
-
-/* ✅ NORMALIZE OUTPUT */
-if(res){
-if(typeof res === "string"){
-res = {
-text: res,
-severity: "MEDIUM",
-category: "GENERAL"
-};
+/* SOCIETY */
+RULES.filter(r=>r.type==="society").forEach(rule=>{
+societyData.forEach(s=>{
+if(norm(s.Question).includes(norm(rule.condition.questionIncludes)) && (s.Value||"").toLowerCase().trim()===rule.condition.valueEquals.toLowerCase()){
+let res=rule.output(s);
+if(res) insights.push({room:"All",text:res.text,meta:res});
 }
-
-insights.push({
-room: m.Room,
-text: res.text,
-meta: res
-});
-}
-
-});
-
-});
-
-
-/* ---------------- SOCIETY RULES ---------------- */
-RULES.filter(r => r.type === "society").forEach(rule => {
-
-societyData.forEach(s => {
-
-if(
-norm(s.Question).includes(norm(rule.condition.questionIncludes)) &&
-(s.Value || "").toLowerCase().trim() === rule.condition.valueEquals.toLowerCase()
-){
-
-let res = rule.output(s);
-
-/* ✅ NORMALIZE OUTPUT */
-if(res){
-if(typeof res === "string"){
-res = {
-text: res,
-severity: "MEDIUM",
-category: "GENERAL"
-};
-}
-
-insights.push({
-room: "All",
-text: res.text,
-meta: res
-});
-}
-
-}
-
-});
-
-});
+});});
 
 return insights;
 }
+
 function bindEvents(){
 document.getElementById("generateBtn").onclick = processFile;
 }
 
 function getUnique(arr,key){ return [...new Set(arr.map(x=>x[key]))]; }
 
- function addInsightRow(){
-
-let table = document.getElementById("insightTable");
-
-let rowCount = table.rows.length;
-let colCount = table.rows[0].cells.length;
-
-let row = table.insertRow();
-
-for(let i=0;i<colCount;i++){
-
-let cell = row.insertCell();
-
-if(i===0){
-cell.innerText = rowCount;
-}else{
-cell.setAttribute("contenteditable","true");
-cell.innerHTML = "";
+function addInsightRow(){
+let table=document.getElementById("insightTable");
+let row=table.insertRow();
+let cols=table.rows[0].cells.length;
+for(let i=0;i<cols;i++){
+let cell=row.insertCell();
+if(i===0) cell.innerText=table.rows.length-1;
+else cell.contentEditable="true";
+}
 }
 
-}
-
-}
 function processFile(){
-
 let file=document.getElementById("fileInput").files[0];
 if(!file){alert("Upload file first");return;}
 
 let reader=new FileReader();
-
 reader.onload=function(e){
-
 let wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
 
 matrixDataRaw=XLSX.utils.sheet_to_json(wb.Sheets["Validation Data"]||{});
 measData=XLSX.utils.sheet_to_json(wb.Sheets["Measurements"]||{});
 societyData=XLSX.utils.sheet_to_json(wb.Sheets["Society Constraints"]||{});
 
-if(!matrixDataRaw.length){
-alert("Validation Data sheet missing");
-return;
-}
-
-projectDataRaw = matrixDataRaw[0];
-
 let rooms=getUnique(matrixDataRaw,"Room");
 
-let html='<div id="reportContainer">';
-html+='<div class="logo">SITE VALIDATION REPORT</div>';
+let html='<div id="reportContainer"><div class="logo">SITE VALIDATION REPORT</div>';
 
-
-// ================= PROJECT DETAILS =================
-html+='<div class="section"><h2>Project Details</h2><table>';
-html+='<tr><th>Field</th><th>Value</th></tr>';
-
-for(let k in projectDataRaw){
-if(!["Room","Section","Item","Value","Walls","Comments"].includes(k)){
-html+=`<tr><td>${k}</td><td>${projectDataRaw[k]}</td></tr>`;
-}
-}
-
-html+='</table></div>';
-
-
-// ================= SOCIETY =================
-if(societyData.length){
-
-html+='<div class="section"><h2>Society Constraints</h2><table>';
-html+='<tr><th>Question</th><th>Value</th></tr>';
-
-let grouped={};
-
-societyData.forEach(x=>{
-let c=x.Category||"General";
-if(!grouped[c]) grouped[c]=[];
-grouped[c].push(x);
-});
-
-for(let cat in grouped){
-
-html+=`<tr class="header"><td colspan="2">${cat}</td></tr>`;
-
-grouped[cat].forEach(i=>{
-html+=`<tr><td>${i.Question}</td><td>${i.Value||""}</td></tr>`;
-});
-
-}
-
-html+='</table></div>';
-}
-
-
-// ================= VALIDATION MATRIX =================
-html+='<div class="section"><h2>Validation Matrix</h2><table>';
-html+='<tr><th>Question</th>';
-
+/* MATRIX */
+html+='<div class="section"><h2>Validation Matrix</h2><table><tr><th>Question</th>';
 rooms.forEach(r=>html+=`<th>${r}</th>`);
 html+='</tr>';
 
 let qs=getUnique(matrixDataRaw,"Item");
-
 qs.forEach(q=>{
-
 html+=`<tr><td>${q}</td>`;
-
 rooms.forEach(r=>{
-
 let rec=matrixDataRaw.find(x=>x.Room===r&&x.Item===q)||{};
 let val=rec.Value||"";
-
 if(rec.Walls) val+=` (${rec.Walls})`;
-
 html+=`<td>${val}</td>`;
-
 });
-
 html+='</tr>';
-
 });
-
 html+='</table></div>';
 
-
-// ================= MEASUREMENTS =================
-if(measData.length){
-
-html+='<div class="section"><h2>Measurements</h2><table>';
-
-let keys = Object.keys(measData[0]).filter(k=>k!=="Room");
-
-html+='<tr><th>Parameter</th>';
-rooms.forEach(r=>html+=`<th>${r}</th>`);
-html+='</tr>';
-
-keys.forEach(k=>{
-
-html+=`<tr><td>${k}</td>`;
-
-rooms.forEach(r=>{
-let rec = measData.find(x=>x.Room===r)||{};
-html+=`<td>${rec[k]||""}</td>`;
-});
-
-html+='</tr>';
-
-});
-
-html+='</table></div>';
-}
-
-
-// ================= INSIGHTS =================
+/* INSIGHTS */
 let autoInsights=runRuleEngine(rooms);
-
 let roomInsights={};
 rooms.forEach(r=>roomInsights[r]=[]);
 
 autoInsights.forEach(i=>{
-if(i.room==="All"){
-rooms.forEach(r=>roomInsights[r].push(i.meta));
-}else{
-roomInsights[i.room].push(i.meta);
-}
+if(i.room==="All") rooms.forEach(r=>roomInsights[r].push(i.meta));
+else roomInsights[i.room].push(i.meta);
 });
 
-
 html+='<div class="section"><h2>Insights</h2>';
-
 html+='<button onclick="addInsightRow()">+ Add Row</button>';
-
-html+='<table id="insightTable">';
-html+='<tr><th>SNo</th>';
-
+html+='<table id="insightTable"><tr><th>SNo</th>';
 rooms.forEach(r=>html+=`<th>${r}</th>`);
 html+='</tr>';
 
-let maxRows = Math.max(...Object.values(roomInsights).map(a=>a.length),5);
-
+let maxRows=Math.max(...Object.values(roomInsights).map(a=>a.length),5);
 for(let i=0;i<maxRows;i++){
-
 html+=`<tr><td>${i+1}</td>`;
-
 rooms.forEach(r=>{
-let txt = roomInsights[r][i]?.text || "";
+let txt=roomInsights[r][i]?.text||"";
 html+=`<td contenteditable="true">${txt}</td>`;
 });
-
 html+='</tr>';
 }
 
-html+='</table></div>';
-
-
-html+='</div>';
+html+='</table></div></div>';
 
 document.getElementById("reportPreview").innerHTML=html;
-/* ✅ SHOW SAVE BUTTON */
 document.getElementById("saveBtn").classList.remove("hidden");
 };
-
 reader.readAsArrayBuffer(file);
 }
 
