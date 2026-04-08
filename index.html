@@ -190,6 +190,40 @@ let minVal=Math.min(...nums);
 let depth=2750 - minVal;
 return {text:`Clear height ${minVal}mm. Ceiling depth ${depth}mm (${depth<150?"Not recommended":"OK"}).`,severity:"HIGH",category:"EXECUTION"};
 }
+},
+  {
+id:"SOFFIT_AC",
+type:"measurement",
+condition:{fields:["soffitNW","soffitEW","soffitSW","soffitWW","winSoffitNW","winSoffitEW","winSoffitSW","winSoffitWW"]},
+output:(vals,m)=>{
+
+let walls=[];
+
+const map=[
+["NW",m.soffitNW,m.winSoffitNW],
+["EW",m.soffitEW,m.winSoffitEW],
+["SW",m.soffitSW,m.winSoffitSW],
+["WW",m.soffitWW,m.winSoffitWW]
+];
+
+map.forEach(([w,d1,d2])=>{
+let v1=parseFloat(d1);
+let v2=parseFloat(d2);
+
+if((!isNaN(v1)&&v1>0&&v1<800) || (!isNaN(v2)&&v2>0&&v2<800)){
+walls.push(w);
+}
+});
+
+if(!walls.length) return null;
+
+return {
+text:`AC space constraint on walls ${walls.join(", ")}. False ceiling pocket may be required.`,
+severity:"MEDIUM",
+category:"EXECUTION"
+};
+
+}
 }
 ];
 
@@ -199,7 +233,7 @@ let insights=[];
 /* WALL RULES */
 RULES.filter(r=>r.type==="wall").forEach(rule=>{
 rooms.forEach(room=>{
-let matches=matrixDataRaw.filter(x=>x.Room===room && x.Section==="Wall" && norm(x.Item).includes(norm(rule.condition.itemIncludes)) && (x.Value||"").toLowerCase().trim()===rule.condition.valueEquals.toLowerCase());
+let matches=matrixDataRaw.filter(x=>x.Room===room && x.Section==="Wall" && norm(x.Item).includes(norm(rule.condition.itemIncludes)) && norm(x.Value).includes(norm(rule.condition.valueEquals)));
 if(matches.length){
 let res=rule.output(matches);
 if(res) insights.push({room,text:res.text,meta:res});
@@ -209,7 +243,7 @@ if(res) insights.push({room,text:res.text,meta:res});
 /* ROOM RULES */
 RULES.filter(r=>r.type==="room").forEach(rule=>{
 rooms.forEach(room=>{
-let matches=matrixDataRaw.filter(x=>x.Room===room && x.Section==="Room" && norm(x.Item).includes(norm(rule.condition.itemIncludes)) && (x.Value||"").toLowerCase().trim()===rule.condition.valueEquals.toLowerCase());
+let matches=matrixDataRaw.filter(x=>x.Room===room && x.Section==="Room" && norm(x.Item).includes(norm(rule.condition.itemIncludes)) && (norm(x.Value).includes(norm(rule.condition.valueEquals)));
 if(matches.length){
 let res=rule.output(matches);
 if(res) insights.push({room,text:res.text,meta:res});
@@ -228,7 +262,8 @@ if(res) insights.push({room:m.Room,text:res.text,meta:res});
 /* SOCIETY */
 RULES.filter(r=>r.type==="society").forEach(rule=>{
 societyData.forEach(s=>{
-if(norm(s.Question).includes(norm(rule.condition.questionIncludes)) && (s.Value||"").toLowerCase().trim()===rule.condition.valueEquals.toLowerCase()){
+if(norm(s.Question).includes(norm(rule.condition.questionIncludes)) ||
+norm(rule.condition.questionIncludes).includes(norm(s.Question)) && (s.Value||"").toLowerCase().trim()===rule.condition.valueEquals.toLowerCase()){
 let res=rule.output(s);
 if(res) insights.push({room:"All",text:res.text,meta:res});
 }
@@ -239,8 +274,8 @@ return insights;
 
 function bindEvents(){
 document.getElementById("generateBtn").onclick = processFile;
+document.getElementById("saveBtn").onclick = saveInsights;
 }
-
 function getUnique(arr,key){ return [...new Set(arr.map(x=>x[key]))]; }
 
 function addInsightRow(){
@@ -253,7 +288,31 @@ if(i===0) cell.innerText=table.rows.length-1;
 else cell.contentEditable="true";
 }
 }
+function saveInsights(){
 
+insightsData = [];
+
+let table = document.getElementById("insightTable");
+
+for(let i=1;i<table.rows.length;i++){
+
+let row = table.rows[i];
+let rowData = [];
+
+for(let j=1;j<row.cells.length;j++){
+rowData.push(row.cells[j].innerText.trim());
+}
+
+insightsData.push(rowData);
+
+}
+
+alert("Insights saved successfully");
+
+document.getElementById("postFinalize").classList.remove("hidden");
+
+}
+  
 function processFile(){
 let file=document.getElementById("fileInput").files[0];
 if(!file){alert("Upload file first");return;}
