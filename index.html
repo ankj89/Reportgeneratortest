@@ -51,162 +51,205 @@ var matrixDataRaw = [];
 var projectDataRaw = {};
 var societyData = [];
 
+/* ---------------- RULE ENGINE CONFIG ---------------- */
+const RULES = [
+{
+id:"RCC_WALL",
+type:"wall",
+condition:{itemIncludes:"load-bearing",valueEquals:"Yes"},
+output:(matches)=>{
+let walls = matches.map(m=>m.Walls).filter(Boolean);
+if(!walls.length) return null;
+return `${walls.join(", ")} are RCC/structural walls. No demolition or chiselling allowed. Electrical/plumbing must be surface or panel-based.`;
+}
+},
+{
+id:"CEILING_VARIATION",
+type:"measurement",
+condition:{fields:["fc1","fc2","fc3","fc4","fc5"]},
+output:(vals)=>{
+let nums = vals.map(v=>parseFloat(v)).filter(v=>!isNaN(v));
+if(nums.length<2) return null;
+let diff = Math.max(...nums)-Math.min(...nums);
+if(diff>25) return "Ceiling level variation > 25mm. False ceiling required.";
+if(diff>=10) return "Ceiling level variation 10–25mm. Punning required.";
+return null;
+}
+},
+{
+id:"WATER",
+type:"society",
+condition:{questionIncludes:"water",valueEquals:"No"},
+output:()=>"No water supply available. Temporary arrangement required."
+},
+{
+id:"POWER",
+type:"society",
+condition:{questionIncludes:"power",valueEquals:"No"},
+output:()=>"No power supply available. DG/temporary power required."
+}
+];
+
+function runRuleEngine(rooms){
+let insights=[];
+
+RULES.filter(r=>r.type==="wall").forEach(rule=>{
+rooms.forEach(room=>{
+let matches = matrixDataRaw.filter(x=>
+x.Room===room &&
+x.Section==="Wall" &&
+x.Item.toLowerCase().includes(rule.condition.itemIncludes) &&
+x.Value===rule.condition.valueEquals
+);
+if(matches.length){
+let res = rule.output(matches);
+if(res) insights.push({room,text:res});
+}
+});
+});
+
+RULES.filter(r=>r.type==="measurement").forEach(rule=>{
+measData.forEach(m=>{
+let vals = rule.condition.fields.map(f=>m[f]);
+let res = rule.output(vals,m.Room);
+if(res) insights.push({room:m.Room,text:res});
+});
+});
+
+RULES.filter(r=>r.type==="society").forEach(rule=>{
+societyData.forEach(s=>{
+if(s.Question.toLowerCase().includes(rule.condition.questionIncludes) && s.Value===rule.condition.valueEquals){
+let res = rule.output(s);
+if(res) insights.push({room:"All",text:res});
+}
+});
+});
+
+return insights;
+}
+
 function bindEvents(){
-  document.getElementById("generateBtn").onclick = processFile;
-  document.getElementById("saveBtn").onclick = saveInsights;
-  document.getElementById("pdfBtn").onclick = downloadPDF;
-  document.getElementById("excelBtn").onclick = downloadExcel;
-  document.getElementById("editBtn").onclick = enableEditing;
-  document.getElementById("resetBtn").onclick = resetApp;
+document.getElementById("generateBtn").onclick = processFile;
+document.getElementById("saveBtn").onclick = saveInsights;
+document.getElementById("pdfBtn").onclick = downloadPDF;
+document.getElementById("excelBtn").onclick = downloadExcel;
+document.getElementById("editBtn").onclick = enableEditing;
+document.getElementById("resetBtn").onclick = resetApp;
 }
 
 function formatLabel(key){
-  return key.replace(/([A-Z])/g,' $1').replace(/_/g,' ').replace(/^./,c=>c.toUpperCase());
+return key.replace(/([A-Z])/g,' $1').replace(/_/g,' ').replace(/^./,c=>c.toUpperCase());
 }
 
-function getUnique(arr, key){
-  return [...new Set(arr.map(x=>x[key]))];
-}
+function getUnique(arr,key){ return [...new Set(arr.map(x=>x[key]))]; }
 
 function processFile(){
+let file=document.getElementById("fileInput").files[0];
+if(!file){alert("Upload file first");return;}
 
-var file = document.getElementById("fileInput").files[0];
-if(!file){ alert("Upload file first"); return; }
+let reader=new FileReader();
+reader.onload=function(e){
+let wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
 
-var reader = new FileReader();
+let raw=XLSX.utils.sheet_to_json(wb.Sheets["Validation Data"]||{});
+let meas=XLSX.utils.sheet_to_json(wb.Sheets["Measurements"]||{});
+societyData=XLSX.utils.sheet_to_json(wb.Sheets["Society Constraints"]||{});
 
-reader.onload = function(e){
+if(!raw.length){alert("No data");return;}
 
-var wb = XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+matrixDataRaw=raw; measData=meas; projectDataRaw=raw[0];
+let rooms=getUnique(raw,"Room");
 
-var raw = XLSX.utils.sheet_to_json(wb.Sheets["Validation Data"] || {});
-var meas = XLSX.utils.sheet_to_json(wb.Sheets["Measurements"] || {});
-societyData = XLSX.utils.sheet_to_json(wb.Sheets["Society Constraints"] || {});
+let html='<div id="reportContainer">';
+html+='<div class="logo">SITE VALIDATION REPORT</div>';
 
-if(!raw.length){ alert("No data found"); return; }
+html+='<div class="section"><h2>Project Details</h2><table>';
+html+='<tr><th>Display Name</th><th>Value</th></tr>';
+for(let k in projectDataRaw){
+if(!["Room","Section","Item","Value"].includes(k)){
+html+=`<tr><td>${formatLabel(k)}</td><td>${projectDataRaw[k]}</td></tr>`;
+}}
+html+='</table></div>';
 
-measData = meas;
-matrixDataRaw = raw;
-projectDataRaw = raw[0];
-
-var rooms = getUnique(raw,"Room");
-
-var html = '<div id="reportContainer">';
-html += '<div class="logo">SITE VALIDATION REPORT</div>';
-
-// PROJECT DETAILS
-html += '<div class="section"><h2>Project Details</h2><table>';
-html += '<tr><th>Display Name</th><th>Value</th></tr>';
-
-for(var k in projectDataRaw){
-  if(!["Room","Section","Item","Value"].includes(k)){
-    html += `<tr><td>${formatLabel(k)}</td><td>${projectDataRaw[k]}</td></tr>`;
-  }
-}
-html += '</table></div>';
-
-// SOCIETY
 if(societyData.length){
-html += '<div class="section"><h2>Society Constraints</h2><table>';
-html += '<tr><th>Question</th><th>Value</th></tr>';
-
-let grouped = {};
-societyData.forEach(x=>{
-  let cat = x.Category || "Others";
-  if(!grouped[cat]) grouped[cat]=[];
-  grouped[cat].push(x);
-});
-
+html+='<div class="section"><h2>Society Constraints</h2><table>';
+html+='<tr><th>Question</th><th>Value</th></tr>';
+let grouped={};
+societyData.forEach(x=>{let c=x.Category||"Others"; if(!grouped[c])grouped[c]=[]; grouped[c].push(x);});
 for(let cat in grouped){
-  html += `<tr class="header"><td colspan="3">${cat}</td></tr>`;
-  grouped[cat].forEach(i=>{
-    html += `<tr><td>${i.Question}</td><td>${i.Value||""}</td></tr>`;
-  });
+html+=`<tr class="header"><td colspan="2">${cat}</td></tr>`;
+grouped[cat].forEach(i=>{
+html+=`<tr><td>${i.Question}</td><td>${i.Value||""}</td></tr>`;
+});
 }
-html += '</table></div>';
-}
-
-// VALIDATION MATRIX
-html += '<div class="section"><h2>Validation Matrix</h2><table>';
-
-html += '<tr><th>Question</th>';
-rooms.forEach(r=> html += `<th>${r} (Result)</th><th>${r} (Comments)</th>`);
-html += '</tr>';
-
-function renderSection(title, section){
-  html += `<tr class="header"><td colspan="${1+rooms.length*2}">${title}</td></tr>`;
-  let subset = raw.filter(x=>x.Section===section);
-  let questions = getUnique(subset,"Item");
-
-  questions.forEach(q=>{
-    html += `<tr><td>${q}</td>`;
-    rooms.forEach(r=>{
-      let rec = subset.find(x=>x.Room===r && x.Item===q) || {};
-      html += `<td>${rec.Value||""}</td><td>${rec.Comments||""}</td>`;
-    });
-    html += '</tr>';
-  });
+html+='</table></div>';
 }
 
-renderSection("WALL VALIDATION","Wall");
-renderSection("ROOM VALIDATION","Room");
+html+='<div class="section"><h2>Validation Matrix</h2><table>';
+html+='<tr><th>Question</th>';
+rooms.forEach(r=>html+=`<th>${r} (Result)</th><th>${r} (Comments)</th>`);
+html+='</tr>';
 
-html += '</table></div>';
-
-// INSIGHTS
-html += '<div class="section"><h2>Insights</h2><table id="insightTable">';
-html += '<tr><th>SNo</th>';
-rooms.forEach(r=> html += `<th>${r}</th>`);
-html += '</tr>';
-
-for(let i=1;i<=20;i++){
-  html += '<tr><td>'+i+'</td>';
-  rooms.forEach(()=> html += '<td contenteditable="true"></td>');
-  html += '</tr>';
+function render(section,title){
+html+=`<tr class="header"><td colspan="${1+rooms.length*2}">${title}</td></tr>`;
+let subset=raw.filter(x=>x.Section===section);
+let qs=getUnique(subset,"Item");
+qs.forEach(q=>{
+html+=`<tr><td>${q}</td>`;
+rooms.forEach(r=>{
+let rec=subset.find(x=>x.Room===r&&x.Item===q)||{};
+html+=`<td>${rec.Value||""}</td><td>${rec.Comments||""}</td>`;
+});
+html+='</tr>';
+});
 }
-html += '</table></div>';
 
-// MEASUREMENTS
-html += '<div class="section"><h2>Measurements</h2><table>';
-if(meas.length){
-  let keys = Object.keys(meas[0]).filter(k=>k!=="Room");
-  html += '<tr><th>Measurement</th>';
-  rooms.forEach(r=> html += `<th>${r}</th>`);
-  html += '</tr>';
+render("Wall","WALL VALIDATION");
+render("Room","ROOM VALIDATION");
+html+='</table></div>';
 
-  keys.forEach(k=>{
-    html += `<tr><td>${formatLabel(k)}</td>`;
-    rooms.forEach(r=>{
-      let rec = meas.find(x=>x.Room===r)||{};
-      html += `<td>${rec[k]||""}</td>`;
-    });
-    html += '</tr>';
-  });
+/* -------- INSIGHTS -------- */
+let autoInsights=runRuleEngine(rooms);
+html+='<div class="section"><h2>Insights</h2><table id="insightTable">';
+html+='<tr><th>SNo</th>';
+rooms.forEach(r=>html+=`<th>${r}</th>`);
+html+='</tr>';
+
+for(let i=0;i<autoInsights.length;i++){
+html+=`<tr><td>${i+1}</td>`;
+rooms.forEach(r=>{
+let m=autoInsights.find(x=>x.room===r||x.room==="All");
+html+=`<td contenteditable="true">${m?m.text:""}</td>`;
+});
+html+='</tr>';
 }
-html += '</table></div>';
 
-html += '</div>';
+for(let i=autoInsights.length;i<20;i++){
+html+='<tr><td>'+ (i+1) +'</td>';
+rooms.forEach(()=>html+='<td contenteditable="true"></td>');
+html+='</tr>';
+}
+html+='</table></div>';
 
-document.getElementById("reportPreview").innerHTML = html;
+html+='</div>';
+
+document.getElementById("reportPreview").innerHTML=html;
 document.getElementById("generateBtn").classList.add("hidden");
 document.getElementById("saveBtn").classList.remove("hidden");
-
 };
-
 reader.readAsArrayBuffer(file);
 }
 
 function saveInsights(){
-var table = document.getElementById("insightTable");
-var headers = [...table.rows[0].cells].map(c=>c.innerText);
-
-insightsData = [];
-for(var r=1;r<table.rows.length;r++){
-  var obj = {};
-  for(var c=0;c<table.rows[r].cells.length;c++){
-    obj[headers[c]] = table.rows[r].cells[c].innerText;
-  }
-  insightsData.push(obj);
+let table=document.getElementById("insightTable");
+let headers=[...table.rows[0].cells].map(c=>c.innerText);
+insightsData=[];
+for(let r=1;r<table.rows.length;r++){
+let obj={};
+for(let c=0;c<table.rows[r].cells.length;c++){
+obj[headers[c]]=table.rows[r].cells[c].innerText;
+}
+insightsData.push(obj);
 }
 
 document.querySelectorAll("[contenteditable]").forEach(el=>el.removeAttribute("contenteditable"));
@@ -216,17 +259,14 @@ document.getElementById("postFinalize").classList.remove("hidden");
 }
 
 function enableEditing(){
-document.querySelectorAll("#insightTable td:not(:first-child)")
-.forEach(td=>td.setAttribute("contenteditable","true"));
+document.querySelectorAll("#insightTable td:not(:first-child)").forEach(td=>td.setAttribute("contenteditable","true"));
 }
 
 function downloadPDF(){
-var content = document.getElementById("reportContainer").outerHTML;
-var w = window.open();
-
+var content=document.getElementById("reportContainer").outerHTML;
+var w=window.open();
 w.document.write(`
-<html>
-<head>
+<html><head>
 <style>
 @page{size:A4 landscape;margin:15mm}
 body{font-family:Arial;padding:10px}
@@ -236,29 +276,21 @@ th{background:#1e3d8f;color:#fff}
 .header td{background:#eef2ff;font-weight:bold}
 .section{page-break-before:always}
 .section:first-child{page-break-before:auto}
-h2{margin-bottom:10px}
 </style>
-</head>
-<body>
-${content}
-</body>
-</html>
-`);
-
-setTimeout(function(){ w.print(); },500);
+</head><body>${content}</body></html>`);
+setTimeout(()=>w.print(),500);
 }
 
 function downloadExcel(){
-var wb = XLSX.utils.book_new();
-
-XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(insightsData), "Insights");
-XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(societyData), "Society Constraints");
-XLSX.writeFile(wb, "Validation_Report.xlsx");
+var wb=XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(insightsData),"Insights");
+XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(societyData),"Society Constraints");
+XLSX.writeFile(wb,"Validation_Report.xlsx");
 }
 
-function resetApp(){ location.reload(); }
+function resetApp(){location.reload();}
 
-document.addEventListener("DOMContentLoaded", bindEvents);
+document.addEventListener("DOMContentLoaded",bindEvents);
 
 </script>
 
