@@ -108,7 +108,7 @@ html += '</table></div>';
 // SOCIETY
 if(societyData.length){
 html += '<div class="section"><h2>Society Constraints</h2><table>';
-html += '<tr><th>Category</th><th>Question</th><th>Value</th></tr>';
+html += '<tr><th>Question</th><th>Value</th></tr>';
 
 let grouped = {};
 societyData.forEach(x=>{
@@ -120,7 +120,7 @@ societyData.forEach(x=>{
 for(let cat in grouped){
   html += `<tr class="header"><td colspan="3">${cat}</td></tr>`;
   grouped[cat].forEach(i=>{
-    html += `<tr><td>${cat}</td><td>${i.Question}</td><td>${i.Value||""}</td></tr>`;
+    html += `<tr><td>${i.Question}</td><td>${i.Value||""}</td></tr>`;
   });
 }
 html += '</table></div>';
