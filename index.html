@@ -63,7 +63,37 @@ if(!walls.length) return null;
 return `${walls.join(", ")} are RCC/structural walls. No demolition or chiselling allowed. Electrical/plumbing must be surface or panel-based.`;
 }
 },
-
+/* -------- Demolition constraint -------- */
+{
+id:"DEMOLITION_LIMIT",
+type:"society",
+condition:{
+questionIncludes:"demolition",
+valueEquals:"Manual"
+},
+output:()=> "Only manual demolition allowed. Project timeline and cost may increase."
+},
+/* -------- Material Movement risk -------- */
+{
+id:"ACCESS_CONSTRAINT",
+type:"society",
+condition:{
+questionIncludes:"vehicle entry",
+valueEquals:"No"
+},
+output:()=> "No vehicle access. Material handling will be manual, increasing labor effort and cost."
+},
+/* -------- Wall seepage -------- */
+{
+id:"WALL_SEEPAGE",
+type:"wall",
+condition:{
+itemIncludes:"seepage",
+valueEquals:"Yes"
+},
+output:()=> "Wall seepage observed. Waterproofing treatment required before finishing."
+},
+  
 /* -------- ROOM DIAGONAL -------- */
 {
 id:"ROOM_DIAGONAL",
@@ -103,7 +133,7 @@ output:(vals,m)=>{
 let nums = vals.map(v=>Number(v)).filter(v=>!isNaN(v) && v!==0);
 if(!nums.length) return null;
 let minVal = Math.min(...nums);
-let depth = 2750 - minVal;
+let depth = minVal - 2750;
 let txt = `Clear height available: ${minVal} mm, depth available for false ceiling: ${depth} mm.`;
 if(depth < 150) txt += " False ceiling not recommended.";
 return txt;
@@ -114,22 +144,94 @@ return txt;
 {
 id:"SOFFIT_AC",
 type:"measurement",
-condition:{fields:["soffitNW","soffitEW","soffitSW","soffitWW","winSoffitNW","winSoffitEW","winSoffitSW","winSoffitWW"]},
+condition:{
+fields:[
+"soffitNW","soffitEW","soffitSW","soffitWW",
+"winSoffitNW","winSoffitEW","winSoffitSW","winSoffitWW"
+]
+},
 output:(vals,m)=>{
+
 let walls = [];
+
+function clean(v){
+let n = Number(v);
+return (isNaN(n) || n <= 0) ? null : n;
+}
+
 const map = [
-["NW", m.soffitNW, m.winSoffitNW],
-["EW", m.soffitEW, m.winSoffitEW],
-["SW", m.soffitSW, m.winSoffitSW],
-["WW", m.soffitWW, m.winSoffitWW]
+["NW", clean(m.soffitNW), clean(m.winSoffitNW)],
+["EW", clean(m.soffitEW), clean(m.winSoffitEW)],
+["SW", clean(m.soffitSW), clean(m.winSoffitSW)],
+["WW", clean(m.soffitWW), clean(m.winSoffitWW)]
 ];
-map.forEach(([w,d1,d2])=>{
-let v1 = Number(d1)||0;
-let v2 = Number(d2)||0;
-if((v1>0 && v1<800) || (v2>0 && v2<800)) walls.push(w);
+
+map.forEach(([w,door,window])=>{
+
+let trigger = false;
+
+/* Door check */
+if(door !== null && door < 800) trigger = true;
+
+/* Window check */
+if(window !== null && window < 800) trigger = true;
+
+if(trigger) walls.push(w);
+
 });
+
 if(!walls.length) return null;
+
 return `Sufficient space for split AC not available on walls ${walls.join(", ")}. False ceiling pocket may be required.`;
+
+}
+},
+/* -------- Wall undulations -------- */
+{
+id:"WALL_UNDULATION",
+type:"measurement",
+condition:{fields:["undNW","undEW","undSW","undWW"]},
+output:(vals,m)=>{
+let walls=[];
+const map=[
+["NW",m.undNW],
+["EW",m.undEW],
+["SW",m.undSW],
+["WW",m.undWW]
+];
+
+map.forEach(([w,v])=>{
+let val=Number(v)||0;
+if(val>5) walls.push(w);
+});
+
+if(!walls.length) return null;
+
+return `Wall undulation observed on ${walls.join(", ")} walls. Punning/replastering required.`;
+}
+},
+/* -------- WINDOW HEIGHT ISSUE (Curtain/Pelmet Impact) -------- */
+{
+id:"WINDOW_SOFFIT_LOW",
+type:"measurement",
+condition:{fields:["winSoffitNW","winSoffitEW","winSoffitSW","winSoffitWW"]},
+output:(vals,m)=>{
+let walls=[];
+const map=[
+["NW",m.winSoffitNW],
+["EW",m.winSoffitEW],
+["SW",m.winSoffitSW],
+["WW",m.winSoffitWW]
+];
+
+map.forEach(([w,v])=>{
+let val=Number(v)||0;
+if(val>0 && val<700) walls.push(w);
+});
+
+if(!walls.length) return null;
+
+return `Low window soffit height on ${walls.join(", ")}. Curtain/pelmet design will be impacted.`;
 }
 },
 
