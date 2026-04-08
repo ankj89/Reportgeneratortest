@@ -75,7 +75,7 @@ let walls = matches.map(m => m.Walls).filter(Boolean);
 
 if(!walls.length) return null;
 
-return `Structural crack observed on walls ${walls.join(", ")}. Need inspection and solution by structural engineer (under Cx scope).`;
+return {text:`Structural crack observed on walls ${walls.join(", ")}. Need inspection and solution by structural engineer (under Cx scope).`,severity:"HIGH",category:"STRUCTURAL"};
 
 }
 },
@@ -91,7 +91,7 @@ let walls = matches.map(m => m.Walls).filter(Boolean);
 
 if(!walls.length) return null;
 
-return `Hairline cracks observed on walls ${walls.join(", ")}. Plaster damage present, re-plastering will be required.`;
+return {text:`Hairline cracks observed on walls ${walls.join(", ")}. Plaster damage present, re-plastering will be required.`,severity:"HIGH",category:"STRUCTURAL"};
 
 }
 },
@@ -101,7 +101,7 @@ type:"wall",
 condition:{itemIncludes:"dark shade",valueEquals:"Yes"},
 output:(matches)=>{
 let walls = matches.map(m=>m.Walls).filter(Boolean);
-return `Existing ${walls.join(", ")} walls have dark shade. Repainting with lighter shade is not recommended.`;
+return {text:`Existing ${walls.join(", ")} walls have dark shade. Repainting with lighter shade is not recommended.`,severity:"LOW",category:"FINISHING"};
 }
 },
 {
@@ -119,7 +119,7 @@ output:()=> "Existing wiring not in good condition. Re-wiring is required."
 {
 id:"WALL_SEEPAGE",
 type:"wall",
-condition:{itemIncludes:"water seepage,dampness ",valueEquals:"Yes"},
+condition:{itemIncludes:"water seepage ",valueEquals:"Yes"},
 output:()=>({text:"Wall seepage / waterproofing issue observed. Damp-proof treatment required (under Cx Scope).",severity:"HIGH",category:"FINISHING"})
 },
 {
@@ -198,8 +198,8 @@ output:(vals)=>{
 let nums=vals.map(Number).filter(v=>!isNaN(v)&&v!==0);
 if(nums.length<2) return null;
 let diff=Math.max(...nums)-Math.min(...nums);
-if(diff>25) return {text:"Ceiling variation >25mm across. Flat false ceiling required to hide the level difference. Peripheral ceiling not recomended.",severity:"HIGH",category:"GEOMETRY"};
-if(diff>=10) return {text:"Ceiling variation 10–25mm.Punning required.Peripheral false ceiling can be done ",severity:"MEDIUM",category:"GEOMETRY"};
+if(diff>25) return {text:"Ceiling variation >25mm across. Flat false ceiling required to hide the level difference. Peripheral ceiling not recomended.",severity:"HIGH",category:"LEVELS"};
+if(diff>=10) return {text:"Ceiling variation 10–25mm.Punning required.Peripheral false ceiling can be done ",severity:"MEDIUM",category:"LEVELS"};
 return null;
 }
 },
