@@ -144,13 +144,13 @@ output:()=> "Height more than 10 ft, additional scaffolding charges will be adde
 {
 id:"VEHICLE_SMALL",
 type:"society",
-condition:{questionIncludes:"Vehicle entry",valueEquals:"Yes,small size"},
+condition:{questionIncludes:"Vehicle",valueEquals:"Yes,small size"},
 output:()=> "Only small size vehicle allowed. Additional transportation charges to be added due to increasd number of trips."
 },
 {
 id:"VEHICLE_NONE",
 type:"society",
-condition:{questionIncludes:"Vehicle entry",valueEquals:"No"},
+condition:{questionIncludes:"Vehicle",valueEquals:"No"},
 output:()=> "No vehicle entry allowed. Additional charges for loading/unloading will be applicable."
 },
 {
@@ -272,7 +272,7 @@ RULES.filter(r => r.type === "wall").forEach(rule => {
 rooms.forEach(room => {
 
 let matches = matrixDataRaw.filter(x =>
-x.Room === room &&
+x.Room === "Room" &&
 x.Section === "Wall" &&
 norm(x.Item).includes(norm(rule.condition.itemIncludes)) &&
 (x.Value || "").toLowerCase().trim() === rule.condition.valueEquals.toLowerCase()
@@ -281,6 +281,43 @@ norm(x.Item).includes(norm(rule.condition.itemIncludes)) &&
 if(matches.length){
 
 let res = rule.output(matches);
+ /* ---------------- ROOM RULES ---------------- */
+RULES.filter(r => r.type === "room").forEach(rule => {
+
+rooms.forEach(room => {
+
+let matches = matrixDataRaw.filter(x =>
+x.Room === room &&
+x.Section === "Room" &&
+norm(x.Item).includes(norm(rule.condition.itemIncludes)) &&
+(x.Value || "").toLowerCase().trim() === rule.condition.valueEquals.toLowerCase()
+);
+
+if(matches.length){
+
+let res = rule.output(matches);
+
+if(res){
+if(typeof res === "string"){
+res = {
+text: res,
+severity: "MEDIUM",
+category: "GENERAL"
+};
+}
+
+insights.push({
+room: room,
+text: res.text,
+meta: res
+});
+}
+
+}
+
+});
+
+});
 
 /* ✅ NORMALIZE OUTPUT */
 if(res){
@@ -386,6 +423,29 @@ document.getElementById("generateBtn").onclick = processFile;
 
 function getUnique(arr,key){ return [...new Set(arr.map(x=>x[key]))]; }
 
+ function addInsightRow(){
+
+let table = document.getElementById("insightTable");
+
+let rowCount = table.rows.length;
+let colCount = table.rows[0].cells.length;
+
+let row = table.insertRow();
+
+for(let i=0;i<colCount;i++){
+
+let cell = row.insertCell();
+
+if(i===0){
+cell.innerText = rowCount;
+}else{
+cell.setAttribute("contenteditable","true");
+cell.innerHTML = "";
+}
+
+}
+
+}
 function processFile(){
 
 let file=document.getElementById("fileInput").files[0];
@@ -529,24 +589,25 @@ roomInsights[i.room].push(i.meta);
 });
 
 
-html+='<div class="section"><h2>Insights</h2><table>';
+html+='<div class="section"><h2>Insights</h2>';
+
+html+='<button onclick="addInsightRow()">+ Add Row</button>';
+
+html+='<table id="insightTable">';
 html+='<tr><th>SNo</th>';
 
 rooms.forEach(r=>html+=`<th>${r}</th>`);
 html+='</tr>';
 
-let maxRows = Math.max(...Object.values(roomInsights).map(a=>a.length),10);
+let maxRows = Math.max(...Object.values(roomInsights).map(a=>a.length),5);
 
 for(let i=0;i<maxRows;i++){
 
 html+=`<tr><td>${i+1}</td>`;
 
 rooms.forEach(r=>{
-
 let txt = roomInsights[r][i]?.text || "";
-
 html+=`<td contenteditable="true">${txt}</td>`;
-
 });
 
 html+='</tr>';
@@ -558,7 +619,8 @@ html+='</table></div>';
 html+='</div>';
 
 document.getElementById("reportPreview").innerHTML=html;
-
+/* ✅ SHOW SAVE BUTTON */
+document.getElementById("saveBtn").classList.remove("hidden");
 };
 
 reader.readAsArrayBuffer(file);
