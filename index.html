@@ -68,7 +68,7 @@ id:"CEILING_VARIATION",
 type:"measurement",
 condition:{fields:["fc1","fc2","fc3","fc4","fc5"]},
 output:(vals)=>{
-let nums = vals.map(v=>parseFloat(v)).filter(v=>!isNaN(v));
+let nums = vals.map(v=>Number(v)).filter(v=>!isNaN(v) && v!==0);
 if(nums.length<2) return null;
 let diff = Math.max(...nums)-Math.min(...nums);
 if(diff>25) return "Ceiling level variation > 25mm. False ceiling required.";
@@ -103,7 +103,7 @@ x.Value===rule.condition.valueEquals
 );
 if(matches.length){
 let res = rule.output(matches);
-if(res) insights.push({room,text:res});
+if(res) insights.push({room:room,text:res});
 }
 });
 });
@@ -208,25 +208,50 @@ render("Wall","WALL VALIDATION");
 render("Room","ROOM VALIDATION");
 html+='</table></div>';
 
+/* -------- MEASUREMENTS -------- */
+html += '<div class="section"><h2>Measurements</h2><table>';
+if(measData && measData.length){
+let keys = Object.keys(measData[0]).filter(k => k !== "Room");
+html += '<tr><th>Measurement</th>';
+rooms.forEach(r => html += `<th>${r}</th>`);
+html += '</tr>';
+keys.forEach(k=>{
+html += `<tr><td>${formatLabel(k)}</td>`;
+rooms.forEach(r=>{
+let rec = measData.find(x => x.Room === r) || {};
+html += `<td>${rec[k] || ""}</td>`;
+});
+html += '</tr>';
+});
+}
+html += '</table></div>';
+
 /* -------- INSIGHTS -------- */
 let autoInsights=runRuleEngine(rooms);
+let roomInsights={};
+rooms.forEach(r=>roomInsights[r]=[]);
+
+autoInsights.forEach(i=>{
+if(i.room==="All"){
+rooms.forEach(r=>roomInsights[r].push(i.text));
+}else{
+roomInsights[i.room].push(i.text);
+}
+});
+
+let maxRows = Math.max(...Object.values(roomInsights).map(a=>a.length),5);
+
 html+='<div class="section"><h2>Insights</h2><table id="insightTable">';
 html+='<tr><th>SNo</th>';
 rooms.forEach(r=>html+=`<th>${r}</th>`);
 html+='</tr>';
 
-for(let i=0;i<autoInsights.length;i++){
+for(let i=0;i<maxRows;i++){
 html+=`<tr><td>${i+1}</td>`;
 rooms.forEach(r=>{
-let m=autoInsights.find(x=>x.room===r||x.room==="All");
-html+=`<td contenteditable="true">${m?m.text:""}</td>`;
+let text=roomInsights[r][i]||"";
+html+=`<td contenteditable="true">${text}</td>`;
 });
-html+='</tr>';
-}
-
-for(let i=autoInsights.length;i<20;i++){
-html+='<tr><td>'+ (i+1) +'</td>';
-rooms.forEach(()=>html+='<td contenteditable="true"></td>');
 html+='</tr>';
 }
 html+='</table></div>';
