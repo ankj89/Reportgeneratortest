@@ -52,64 +52,114 @@ function norm(str){return (str||"").toLowerCase().replace(/[^a-z0-9]/g,"");}
 /* ---------------- RULE ENGINE CONFIG ---------------- */
 const RULES = [
 {
-id:"RCC_WALL",
-type:"wall",
-condition:{itemIncludes:"load-bearing",valueEquals:"yes"},
-output:(matches)=>{
-let walls = matches.map(m=>m.Walls).filter(Boolean);
-return `RCC walls (${walls.join(", ")}) detected. No demolition or chiselling allowed. Wall panelling required for any electrical works.`;
-}
-},
-{
-id:"STRUCTURAL_CRACK",
-type:"wall",
-condition:{itemIncludes:"structural crack",valueEquals:"yes"},
-output:(matches)=>{
-let walls = matches.map(m => m.Walls).filter(Boolean);
-if(!walls.length) return null;
-return `Structural crack observed on walls ${walls.join(", ")}. Structural engineer intervention required.`;
-}
-},
-{
-id:"HAIRLINE_CRACK",
-type:"wall",
-condition:{itemIncludes:"hairline crack",valueEquals:"yes"},
-output:(matches)=>{
-let walls = matches.map(m => m.Walls).filter(Boolean);
-if(!walls.length) return null;
-return `Hairline cracks on walls ${walls.join(", ")}. Re-plastering required.`;
-}
-},
-{
-id:"WALL_SEEPAGE",
-type:"wall",
-condition:{itemIncludes:"water seepage",valueEquals:"yes"},
-output:()=> "Wall seepage observed. Damp-proof treatment required."
-},
-{
-id:"WIRING",
-type:"room",
-condition:{itemIncludes:"wiring",valueEquals:"no"},
-output:()=> "Existing wiring not in good condition. Re-wiring required."
-},
-{
-id:"SCAFFOLDING",
+id:"SERVICE_LIFT",
 type:"society",
-condition:{questionIncludes:"scaffold",valueEquals:"yes"},
-output:()=> "Height >10 ft. Scaffolding cost applicable."
+condition:{questionIncludes:"service lift",valueEquals:"not allowed"},
+output:()=> "Service lift is not present or not allowed for heavy material shifting, additional charges for manual lifting applicable"
+},
+{
+id:"LOADING_30",
+type:"society",
+condition:{questionIncludes:"loading",valueEquals:"more than 30"},
+output:()=> "Loading/unloding area is availlable more than 30ft. Additional charges for long lead applicable"
+},
+{
+id:"LOADING_NONE",
+type:"society",
+condition:{questionIncludes:"loading",valueEquals:"not present"},
+output:()=> "Loading/unloding area is not available. Additional charges for manual lifting and long lead applicable"
+},
+{
+id:"DEMOLITION",
+type:"society",
+condition:{questionIncludes:"demolition",valueEquals:"manual"},
+output:()=> "Only manual demolition allowed. Additional charges for manual work applicable"
+},
+{
+id:"OUTSTATION",
+type:"society",
+condition:{questionIncludes:"outstation",valueEquals:"yes"},
+output:()=> "Site location outside of servicable area. Additional outsation charges applicable"
+},
+{
+id:"LIFT_HEIGHT",
+type:"society",
+condition:{questionIncludes:"height of service lift",valueEquals:"<7"},
+output:()=> "Sufficient height not available in the service lift. Manual lifting charges maybe applicable"
+},
+{
+id:"LIFT_DEPTH",
+type:"society",
+condition:{questionIncludes:"depth of service lift",valueEquals:"<4"},
+output:()=> "Sufficient depth not available in the service lift. Manual lifting charges maybe applicable"
+},
+{
+id:"LIFT_LENGTH",
+type:"society",
+condition:{questionIncludes:"length of service lift",valueEquals:"<3"},
+output:()=> "Sufficient lenght not available in the service lift. Manual lifting charges maybe applicable"
 },
 {
 id:"VEHICLE_NONE",
 type:"society",
 condition:{questionIncludes:"vehicle",valueEquals:"no"},
-output:()=> "Vehicle entry not allowed. Long lead charges applicable."
+output:()=> "Vehicle entry not allowed. Additional charges for long lead applicable"
 },
 {
-id:"LOADING_DISTANCE_FAR",
+id:"VEHICLE_SMALL",
 type:"society",
-condition:{questionIncludes:"loading",valueEquals:"more than 30"},
-output:()=> "Loading distance >30 ft. Long lead charges applicable."
+condition:{questionIncludes:"vehicle",valueEquals:"small"},
+output:()=> "Only small size vehicals allowed. Additional debris trips and transportation charges are applicable"
 },
+{
+id:"STAIR_WIDTH",
+type:"society",
+condition:{questionIncludes:"staircase width",valueEquals:"<4"},
+output:()=> "Staircase available width <4ft. Access is cosntrained so design woodwork/furniture/carpentry products accordingly"
+},
+{
+id:"NO_WATER",
+type:"society",
+condition:{questionIncludes:"water supply",valueEquals:"no"},
+output:()=> "Active water supply not available. Inform Cx. Suitable charges applicable incase to be done by us"
+},
+{
+id:"NO_POWER",
+type:"society",
+condition:{questionIncludes:"power supply",valueEquals:"no"},
+output:()=> "Active electric supply not available. Inform Cx. Suitable charges applicable incase to be done by us"
+},
+{
+id:"NO_BACKUP",
+type:"society",
+condition:{questionIncludes:"backup",valueEquals:"no"},
+output:()=> "Backup powwer supply not available. Check with Cx for inverter requirement"
+},
+{
+id:"NOC",
+type:"society",
+condition:{questionIncludes:"noc",valueEquals:"yes"},
+output:()=> "Builder/Society permission required. Inform Cx"
+},
+{
+id:"WORK_TIME",
+type:"society",
+condition:{questionIncludes:"permissible work"},
+output:(s)=> s.Value ? `Permissible work days and timings : ${s.Value}` : null
+},
+{
+id:"MATERIAL_RESTRICTION",
+type:"society",
+condition:{questionIncludes:"material"},
+output:(s)=> s.Value ? `Material/Specification constraints by soicety/builder : ${s.Value}` : null
+},
+{
+id:"EXTERNAL_MOD",
+type:"society",
+condition:{questionIncludes:"external walls",valueEquals:"no"},
+output:()=> "Society/Builder does not allow any mofication on corridor/external walls or facia. Design accordingly"
+},
+
 {
 id:"ROOM_DIAGONAL",
 type:"measurement",
@@ -118,11 +168,248 @@ output:(vals)=>{
 let nums=vals.map(Number).filter(v=>!isNaN(v)&&v!==0);
 if(nums.length<2) return null;
 let diff=Math.abs(nums[0]-nums[1]);
-if(diff>25) return "Room geometry deviation >25mm. Plastering required.";
-if(diff>=10) return "Room geometry deviation 10–25mm. Punning required.";
+if(diff>20) return `Room walls are not in level. Room diagonal deviation > 20 mm so plastering will be required`;
+if(diff>=10) return `Room walls are not in level. Room diagonal deviation <20 mm so punning will be required`;
 return null;
 }
 },
+{
+id:"LOAD_BEARING",
+type:"wall",
+condition:{itemIncludes:"load bearing",valueEquals:"yes"},
+output:(m)=>`RCC walls ${m.map(x=>x.Walls).join(", ")} detected. No demolition or chiselling allowed. Wall panelling required for any electrical works`
+},
+{
+id:"DRY_WALL",
+type:"wall",
+condition:{itemIncludes:"dry wall",valueEquals:"yes"},
+output:(m)=>`Dry/Gypsum walls ${m.map(x=>x.Walls).join(", ")} detected.Bison board panelling or ply support required incase we are doing any carpentry work on the wall`
+},
+{
+id:"NICHES",
+type:"wall",
+condition:{itemIncludes:"niches",valueEquals:"yes"},
+output:(m)=>`Niches observed on walls ${m.map(x=>x.Walls).join(", ")}. Ply packing required for levelling`
+},
+{
+id:"STRUCTURAL_CRACK",
+type:"wall",
+condition:{itemIncludes:"structural crack",valueEquals:"yes"},
+output:(m)=>` Structural crack detected on walls ${m.map(x=>x.Walls).join(", ")}. Assesment and rectification under Cx scope`
+},
+{
+id:"HAIRLINE",
+type:"wall",
+condition:{itemIncludes:"hairline crack",valueEquals:"yes"},
+output:(m)=>`Hairline crack/loose plaster detected on walls ${m.map(x=>x.Walls).join(", ")}. Re plastering required to be done`
+},
+{
+id:"SEEPAGE",
+type:"wall",
+condition:{itemIncludes:"seepage",valueEquals:"yes"},
+output:()=> "Water seepage or dampness observed. Water proofing/Damp proofing treatment required before start of works(under Cx scope)"
+},
+{
+id:"CORE_CUT_NO",
+type:"wall",
+condition:{itemIncludes:"core cut",valueEquals:"no"},
+output:()=> "Suitable location not available for core cutting"
+},
+{
+id:"CORE_CUT_YES",
+type:"wall",
+condition:{itemIncludes:"core cut",valueEquals:"yes"},
+output:(m)=>`Core cutting possible on walls ${m.map(x=>x.Walls).join(", ")}`
+},
+{
+id:"ELECTRICAL",
+type:"wall",
+condition:{itemIncludes:"switch",valueEquals:"no"},
+output:(m)=>`Existing electrical points are not working on walls ${m.map(x=>x.Walls).join(", ")}. Replacement required`
+},
+{
+id:"AC_POINT_NO",
+type:"wall",
+condition:{itemIncludes:"ac point",valueEquals:"no"},
+output:()=> "AC point is not provided. Lowside works to be taken in the costing or informed to Cx"
+},
+{
+id:"AC_POINT_YES",
+type:"wall",
+condition:{itemIncludes:"ac point",valueEquals:"yes"},
+output:(m)=>`AC point provided on wall ${m.map(x=>x.Walls).join(", ")}`
+},
+{
+id:"SKIRTING",
+type:"wall",
+condition:{itemIncludes:"skirting",valueEquals:"yes"},
+output:(m)=>` Skirting removal required on walls ${m.map(x=>x.Walls).join(", ")}`
+},
+  /* ---------------- FLOOR ---------------- */
+{
+id:"FLOOR_CONDITION",
+type:"room",
+condition:{itemIncludes:"flooring in good condition",valueEquals:"no"},
+output:()=> " Flooring not in level or in good condition. Recommend replacement"
+},
+
+{
+id:"FLOOR_EXTENSION",
+type:"room",
+condition:{itemIncludes:"room extension",valueEquals:"yes"},
+output:()=> " Floors not in same level. Recommend PCC + new floor tiling"
+},
+
+{
+id:"TILE_ON_TILE",
+type:"room",
+condition:{itemIncludes:"tile on tile",valueEquals:"yes"},
+output:()=> " Tile on tile flooring can be suggested. Check with Cx. Modification to existing doors/wood work to be considered in costing"
+},
+
+/* ---------------- CEILING ---------------- */
+{
+id:"FALSE_CEILING",
+type:"room",
+condition:{itemIncludes:"false ceiling",valueEquals:"yes"},
+output:()=> " Existing false ceiling not in good condition. Removal recomended"
+},
+
+{
+id:"CEILING_UNDULATION",
+type:"room",
+condition:{itemIncludes:"ceiling undulation",valueEquals:"yes"},
+output:()=> "Undulation observed on true ceiling. Flat false Ceiling suggested. In case of no false ceiling or periphery ceiling, punning will be required."
+},
+
+{
+id:"CEILING_SEEPAGE",
+type:"room",
+condition:{itemIncludes:"ceiling seepage",valueEquals:"yes"},
+output:()=> "Water seepage or dampness observed. Water proofing/Damp proofing treatment required before start of works(under Cx scope)"
+},
+
+/* ---------------- DOORS ---------------- */
+{
+id:"DOOR_CONDITION_NO",
+type:"room",
+condition:{itemIncludes:"door frame",valueEquals:"no"},
+output:()=> " Existing door or door frame is not in good condition. New door or door frame recomended"
+},
+
+{
+id:"DOOR_CONDITION_YES",
+type:"room",
+condition:{itemIncludes:"door frame",valueEquals:"yes"},
+output:()=> " Existing door /frame in good condition. Refurbhsihment can be suggested instead of new doors"
+},
+
+
+
+/* ---------------- WINDOWS ---------------- */
+{
+id:"WINDOW_CONDITION",
+type:"room",
+condition:{itemIncludes:"window frame",valueEquals:"no"},
+output:()=> " Existing window or window frame is not in good condition. Recommend replacement"
+},
+
+{
+id:"WINDOW_TRACK",
+type:"room",
+condition:{itemIncludes:"additional tracks",valueEquals:"no"},
+output:()=> " Sufficient space is not available to install additional tracks in window areas"
+},
+
+{
+id:"GRILL",
+type:"room",
+condition:{itemIncludes:"grill",valueEquals:"yes"},
+output:()=> "Existing grills may require repair or repainting"
+},
+
+/* ---------------- ELECTRICAL ---------------- */
+{
+id:"WIRING_CONDITION",
+type:"room",
+condition:{itemIncludes:"wiring in good condition",valueEquals:"no"},
+output:()=> " Existing wiring is not in good condition. Re-wiring is recomended"
+},
+
+{
+id:"LOAD_CAPACITY",
+type:"room",
+condition:{itemIncludes:"load capacity",valueEquals:"no"},
+output:()=> " Existing wiring does not have sufficent capacity to take additional load. Re-wiring is suggested"
+},
+
+/* ---------------- PLUMBING ---------------- */
+{
+id:"PLUMBING_POINTS",
+type:"room",
+condition:{itemIncludes:"plumbing points",valueEquals:"no"},
+output:()=> " Plumbing points not available. Design for new point or relocation or extension if required"
+},
+
+{
+id:"PLUMBING_ISSUE",
+type:"room",
+condition:{itemIncludes:"plumbing lines",valueEquals:"yes"},
+output:()=> " Existing plumbing lines are not in good condition. Recommed replcement/new plumbing"
+},
+
+{
+id:"PLUMBING_OLD",
+type:"room",
+condition:{itemIncludes:"outdated plumbing",valueEquals:"yes"},
+output:()=> " Existing plumbing lines are not in good condition. Recommed replcement/new plumbing"
+},
+
+/* ---------------- BATH ---------------- */
+{
+id:"SHOWER",
+type:"room",
+condition:{itemIncludes:"shower cubicle",valueEquals:"no"},
+output:()=> "Shower cubicle not recomended"
+},
+
+{
+id:"SHOWER_YES",
+type:"room",
+condition:{itemIncludes:"shower cubicle",valueEquals:"yes"},
+output:()=> "Shower cubicle can be installed"
+},
+
+{
+id:"WC_NO",
+type:"room",
+condition:{itemIncludes:"wc relocate",valueEquals:"no"},
+output:()=> " Existing WC cannot be relocated due to drainage constarints. Design appropriately"
+},
+
+{
+id:"WC_YES",
+type:"room",
+condition:{itemIncludes:"wc relocate",valueEquals:"yes"},
+output:()=> "WC can be relocated to <mention wall name>"
+},
+
+/* ---------------- SERVICES ---------------- */
+{
+id:"FLOOR_PROTECTION",
+type:"room",
+condition:{itemIncludes:"floor protection",valueEquals:"yes"},
+output:()=> "Add floor protection in Services costing"
+},
+
+{
+id:"DEEP_CLEAN",
+type:"room",
+condition:{itemIncludes:"deep cleaning",valueEquals:"yes"},
+output:()=> "Add deep cleaning in Services costing"
+},
+
+
 {
 id:"CEILING_VARIATION",
 type:"measurement",
@@ -131,7 +418,7 @@ output:(vals)=>{
 let nums=vals.map(Number).filter(v=>!isNaN(v)&&v!==0);
 if(nums.length<2) return null;
 let diff=Math.max(...nums)-Math.min(...nums);
-if(diff>25) return "Ceiling variation >25mm. False ceiling required.";
+if(diff>20) return `True ceiling level (corners and center) deviation of > 20 mm observed across. Only flat false ceiling is suggested or keep the ceiling exposed. No peripheral ceiling to be done`;
 return null;
 }
 },
