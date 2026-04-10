@@ -18,6 +18,9 @@ th,td{border:1px solid #ccc;padding:8px}
 th{background:#1e3d8f;color:#fff;font-weight:bold}
 .header{background:#eef2ff;font-weight:bold}
 .hidden{display:none}
+.type-design{background:#e7f3ff;}
+.type-cost{background:#fff3cd;}
+.type-execution{background:#fdecea;}
 </style>
 </head>
 
@@ -606,11 +609,23 @@ XLSX.writeFile(wb, "Insights.xlsx");
 }
 
 function downloadPDF(){
-let printContent = document.getElementById("reportContainer").innerHTML;
+
+let content = document.getElementById("reportContainer").innerHTML;
+
+let styles = document.querySelector("style").outerHTML;
+
 let win = window.open('', '', 'height=700,width=900');
-win.document.write('<html><body>'+printContent+'</body></html>');
+
+win.document.write(`
+<html>
+<head>${styles}</head>
+<body>${content}</body>
+</html>
+`);
+
 win.document.close();
 win.print();
+
 }
 
 function processFile(){
@@ -708,7 +723,13 @@ html += `<tr>
 let txt = dataArr[i] || "";
 let meta = classifyInsight(txt);
 
-html += `<tr>
+let rowClass = "";
+
+if(meta.type === "Design Input") rowClass = "type-design";
+else if(meta.type === "Cost Input") rowClass = "type-cost";
+else if(meta.type === "Execution Input") rowClass = "type-execution";
+
+html += `<tr class="${rowClass}">
 <td>${i+1}</td>
 <td contenteditable="true">${txt}</td>
 <td contenteditable="true">${meta.type}</td>
