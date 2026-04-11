@@ -108,34 +108,18 @@ populateReportList();
 }
 function getUniqueWalls(matches){
 
-let walls = [];
-
-matches.forEach(x=>{
-if(!x.Walls) return;
-
-/* split if multiple */
-x.Walls.split(",").forEach(w=>{
-let clean = w.trim();
-if(clean) walls.push(clean);
-});
-
-});
-
-/* remove duplicates */
-function getUniqueWalls(matches){
-
 let wallSet = new Set();
 
 matches.forEach(x=>{
 
 if(!x.Walls) return;
 
-/* SPLIT MULTIPLE VALUES */
+/* split multiple */
 x.Walls.split(",").forEach(w=>{
 
 let clean = w.trim().toUpperCase();
 
-/* STRICT WALL FILTER */
+/* allow only valid walls */
 if(["NW","EW","SW","WW"].includes(clean)){
 wallSet.add(clean);
 }
@@ -143,6 +127,15 @@ wallSet.add(clean);
 });
 
 });
+
+/* order */
+const order = ["NW","EW","SW","WW"];
+
+return Array.from(wallSet)
+.sort((a,b)=>order.indexOf(a)-order.indexOf(b))
+.join(", ");
+
+}
 
 /* ORDERED OUTPUT */
 const order = ["NW","EW","SW","WW"];
