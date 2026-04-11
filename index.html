@@ -684,7 +684,7 @@ output:(m)=>`Niches present on walls (${getUniqueWalls(m)}).Ply packing cost to 
 {
 id:"STRUCTURAL_CRACK",
 type:"wall",
-condition:{itemIncludes:"structural",valueEquals:"yes"},
+condition:{itemIncludes:"major cracks",valueEquals:"yes"},
 output:(m)=>{
 let walls = getUniqueWalls(m);
 return `Structural cracks observed on walls (${walls}). Need suitable treatment (under Cx Scope)`;
