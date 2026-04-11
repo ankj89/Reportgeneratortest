@@ -574,7 +574,7 @@ msgs.push(`AC pocket required on walls ${acWalls.join(", ")} due to insufficient
 
 /* ---------------- FINAL ---------------- */
 
-return msgs;
+return msgs.join(" | ");
 
 }
 },
@@ -642,7 +642,7 @@ msgs.push(`${w}: Undulation >20mm. Plastering required`);
 }
 });
 
-return msgs.length?msgs:null;
+return msgs.length ? msgs.join(" | ") : null;
 }
 }
 
@@ -658,7 +658,10 @@ rooms.forEach(room=>{
 let matches=matrixDataRaw.filter(x=>
 x.Room===room &&
 norm(x.Item).includes(norm(rule.condition.itemIncludes)) &&
+(
+!rule.condition.valueEquals ||
 norm(x.Value||"").includes(norm(rule.condition.valueEquals))
+)
 );
 if(matches.length){
 let res=rule.output(matches);
