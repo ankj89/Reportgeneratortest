@@ -360,7 +360,7 @@ output:()=> "Existing plumbing lines are not in good condition. Recommend replac
 {
 id:"NOPLUMBING",
 type:"room",
-condition:{itemIncludes:"plumbing point available",valueEquals:"no"},
+condition:{itemIncludes:"plumbing points available",valueEquals:"no"},
 output:()=> "Plumbing points not available. Design for new point or relocation or extension if required"
 },  
 {
@@ -388,8 +388,55 @@ id:"WARDROBESHUTTER",
 type:"room",
 condition:{itemIncludes:"swing shutters",valueEquals:"no"},
 output:()=> "Insufficient space for swing shutters in wardrobe/storages. Sliding shutter recomended."
+},
+ {
+id:"FLOOR_PROTECTION",
+type:"room",
+condition:{itemIncludes:"floor protection",valueEquals:"yes"},
+output:()=> "Floor protection required during execution. Additional cost to be considered"
+},
+{
+id:"DEEP_CLEANING",
+type:"room",
+condition:{itemIncludes:"deep cleaning",valueEquals:"yes"},
+output:()=> "Deep cleaning required post execution. Additional cost to be considered"
 },  
-
+{
+id:"WC_RELOCATION",
+type:"room",
+condition:{itemIncludes:"relocate the wc",valueEquals:"no"},
+output:()=> "WC relocation requires external plumbing/drain line modification. Additional plumbing cost to be considered"
+},
+{
+id:"GRILL_REPAIR",
+type:"room",
+condition:{itemIncludes:"grills",valueEquals:"yes"},
+output:()=> "Existing grills require repair/repainting. Additional paint and repair cost applicable"
+},
+{
+id:"FLOOR_LEVEL_EXTENSION",
+type:"room",
+condition:{itemIncludes:"level the floors",valueEquals:"yes"},
+output:()=> "Floor level difference observed in extension area. Levelling screed/PCC required"
+},  
+  {
+id:"TILE_ON_TILE_YES",
+type:"room",
+condition:{itemIncludes:"tile on tile",valueEquals:"yes"},
+output:()=> "Tile-on-tile installation feasible. Modifications to existing doors/wwodwork to be considered in costing."
+},
+{
+id:"CEILING_SEEPAGE",
+type:"room",
+condition:{itemIncludes:"water leaks",valueEquals:"yes"},
+output:()=> "Water leakage/moisture damage observed on true ceiling. Waterproofing treatment required before start of works(Cx scope)"
+},  
+{
+id:"CEILING_UNDULATION_FLAG",
+type:"room",
+condition:{itemIncludes:"undulations",valueEquals:"yes"},
+output:()=> "Undulation observed on true ceiling. Flat false ceiling suggested. In case of no false ceiling or periphery ceiling, POP punning will be required"
+},  
 /* ================= WALL ================= */
 
 {
@@ -416,7 +463,7 @@ output:(m)=>`Niches present on walls (${m.map(x=>x.Walls).join(", ")}).Ply packi
 {
 id:"STRUCTURAL_CRACK",
 type:"wall",
-condition:{itemIncludes:"structural crack",valueEquals:"yes"},
+condition:{itemIncludes:"structural",valueEquals:"yes"},
 output:(m)=>`Structural cracks observed on walls (${m.map(x=>x.Walls).join(", ")}). Need suitable treatment(under Cx Scope)`
 },
 
@@ -440,13 +487,49 @@ type:"wall",
 condition:{itemIncludes:"ac point",valueEquals:"no"},
 output:()=> "AC point not available. Lowside works required"
 },
-
+{
+id:"AC_PELMET",
+type:"wall",
+condition:{itemIncludes:"panelling/pelmet",valueEquals:"yes"},
+output:(m)=>`AC pelmet/panelling required on walls (${m.map(x=>x.Walls).join(", ")})`
+},
+{
+id:"SWITCH_SOCKET_BAD",
+type:"wall",
+condition:{itemIncludes:"switches and sockets",valueEquals:"no"},
+output:(m)=>`Switches/sockets not in working condition on walls (${m.map(x=>x.Walls).join(", ")}). Replacement and rewiring to be considered`
+},  
+{
+id:"SKIRTING_NOT_FLUSH",
+type:"room",
+condition:{itemIncludes:"skirting flushed",valueEquals:"no"},
+output:()=> "Skirting demolition required to accommodate wardrobe or paneling work"
+},
+{
+id:"DOOR_CONDITION_BAD",
+type:"room",
+condition:{itemIncludes:"door frame",valueEquals:"no"},
+output:()=> "Existing door or door frame is not in good condition. Replacement recommended"
+},
+{
+id:"WINDOW_CONDITION_BAD",
+type:"room",
+condition:{itemIncludes:"window frame",valueEquals:"no"},
+output:()=> "Existing window or window frame is not in good condition. Replacement recommended"
+},  
+  {
+id:"WINDOW_TRACKS_NO",
+type:"room",
+condition:{itemIncludes:"additional tracks",valueEquals:"no"},
+output:()=> "Sufficient space not available to install additional window tracks. Design to be adjusted accordingly"
+},
 {
 id:"DARK_SHADE",
 type:"wall",
 condition:{itemIncludes:"darker shade",valueEquals:"yes"},
 output:(m)=>`Dark shade on walls (${m.map(x=>x.Walls).join(", ")}). Repainting not recommended with lighter shade.Fresh paintto be considered`
 },
+  
 
 /* ================= MEASUREMENT ================= */
 
