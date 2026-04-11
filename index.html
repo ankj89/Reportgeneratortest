@@ -122,7 +122,36 @@ if(clean) walls.push(clean);
 });
 
 /* remove duplicates */
-return [...new Set(walls)].join(", ");
+function getUniqueWalls(matches){
+
+let wallSet = new Set();
+
+matches.forEach(x=>{
+
+if(!x.Walls) return;
+
+/* SPLIT MULTIPLE VALUES */
+x.Walls.split(",").forEach(w=>{
+
+let clean = w.trim().toUpperCase();
+
+/* STRICT WALL FILTER */
+if(["NW","EW","SW","WW"].includes(clean)){
+wallSet.add(clean);
+}
+
+});
+
+});
+
+/* ORDERED OUTPUT */
+const order = ["NW","EW","SW","WW"];
+
+return Array.from(wallSet)
+.sort((a,b)=>order.indexOf(a)-order.indexOf(b))
+.join(", ");
+
+}
 
 }
 function createNewReport(){
@@ -946,7 +975,7 @@ RULES.forEach(rule=>{
 
 if(rule.type==="wall"||rule.type==="room"){
 rooms.forEach(room=>{
-let matches=matrixDataRaw.filter(x=>
+let matches = matrixDataRaw.filter(x=>
 x.Room===room &&
 norm(x.Item).includes(norm(rule.condition.itemIncludes)) &&
 (
@@ -954,6 +983,18 @@ norm(x.Item).includes(norm(rule.condition.itemIncludes)) &&
 norm(x.Value||"").includes(norm(rule.condition.valueEquals))
 )
 );
+
+/* 🔥 REMOVE DUPLICATE WALL ENTRIES */
+let uniqueMap = new Map();
+
+matches.forEach(x=>{
+let key = (x.Walls || "").replace(/\s/g,""); // normalize
+if(!uniqueMap.has(key)){
+uniqueMap.set(key, x);
+}
+});
+
+matches = Array.from(uniqueMap.values());
 if(matches.length){
 let res=rule.output(matches);
 if(res) insights.push({room,text:res});
@@ -1171,7 +1212,7 @@ td:nth-child(5){width:25%;}
 `;
 
 let win = window.open('', '', 'height=700,width=1000');
-let win = window.open('', '', 'height=700,width=1000');
+
 
 win.document.write(`
 <html>
