@@ -64,14 +64,47 @@ function norm(str){return (str||"").toLowerCase().replace(/[^a-z0-9]/g,"");}
 function getAllReports(){
 return JSON.parse(localStorage.getItem("validationReports") || "{}");
 }
+function getReportName(){
 
+let pid = "";
+let cx = "";
+
+/* try to read from project data */
+if(matrixDataRaw.length){
+pid = matrixDataRaw[0].PID || matrixDataRaw[0].Pid || "";
+cx = matrixDataRaw[0]["Cx Name"] || matrixDataRaw[0].Cx || "";
+}
+
+/* fallback if not found */
+pid = pid || "PID";
+cx = cx || "Cx";
+
+/* timestamp */
+let now = new Date();
+let ts = now.toLocaleString();
+
+/* final */
+return `${pid}_${cx} (${ts})`;
+
+}
 function saveCurrentReport(){
 
 if(!currentReportId) return;
 
 let allReports = getAllReports();
 
-allReports[currentReportId] = {
+let name = currentReportId;
+
+/* avoid overwrite */
+let count = 1;
+while(allReports[name]){
+name = currentReportId + " (" + count + ")";
+count++;
+}
+
+currentReportId = name;
+
+allReports[name] = {
 matrixDataRaw,
 measData,
 societyData,
@@ -87,7 +120,7 @@ populateReportList();
 
 function createNewReport(){
 
-currentReportId = "report_" + Date.now();
+currentReportId = getReportName();
 
 alert("New report created");
 
@@ -150,7 +183,7 @@ dropdown.innerHTML = "";
 Object.keys(reports).forEach(id=>{
 let opt = document.createElement("option");
 opt.value = id;
-opt.text = `${id} (${new Date(reports[id].timestamp).toLocaleString()})`;
+opt.text = id;
 dropdown.appendChild(opt);
 });
 
@@ -1132,7 +1165,7 @@ html += createInsightTable(`${room} Insights`, roomInsights[room], `roomTable_${
 
 document.getElementById("reportPreview").innerHTML=html;
 document.getElementById("saveBtn").classList.remove("hidden");
-if(!currentReportId) currentReportId = "report_" + Date.now();
+if(!currentReportId) currentReportId = getReportName();
 saveCurrentReport();
 };
 reader.readAsArrayBuffer(file);
