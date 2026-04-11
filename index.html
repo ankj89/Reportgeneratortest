@@ -93,18 +93,7 @@ if(!currentReportId) return;
 
 let allReports = getAllReports();
 
-let name = currentReportId;
-
-/* avoid overwrite */
-let count = 1;
-while(allReports[name]){
-name = currentReportId + " (" + count + ")";
-count++;
-}
-
-currentReportId = name;
-
-allReports[name] = {
+allReports[currentReportId] = {
 matrixDataRaw,
 measData,
 societyData,
@@ -122,9 +111,15 @@ function createNewReport(){
 
 currentReportId = getReportName();
 
-alert("New report created");
+matrixDataRaw = [];
+measData = [];
+societyData = [];
+insightsData = [];
+
+document.getElementById("reportPreview").innerHTML = "";
 
 saveCurrentReport();
+
 }
 
 function loadReport(reportId){
@@ -1165,7 +1160,9 @@ html += createInsightTable(`${room} Insights`, roomInsights[room], `roomTable_${
 
 document.getElementById("reportPreview").innerHTML=html;
 document.getElementById("saveBtn").classList.remove("hidden");
-if(!currentReportId) currentReportId = getReportName();
+if(!currentReportId){
+currentReportId = getReportName();
+}
 saveCurrentReport();
 };
 reader.readAsArrayBuffer(file);
