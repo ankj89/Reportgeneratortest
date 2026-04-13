@@ -27,10 +27,7 @@ border-collapse:collapse;
 table-layout:auto;
 font-family:Arial;
 }
-table{
-display:block;
-overflow-x:auto;
-} 
+
 th, td{
 min-width:120px;
 }
@@ -132,6 +129,7 @@ let ts = now.toLocaleString();
 return `${pid}_${cx} (${ts})`;
 
 }
+ 
 function saveCurrentReport(){
 
 if(!currentReportId) return;
@@ -1181,24 +1179,7 @@ let content = document.getElementById("reportPreview").innerHTML;
 /* PRINT STYLES */
 let styles = `
 <style>
-header{
-position: fixed;
-top: 0;
-width:100%;
-z-index:1000;
-left: 0;
-right: 0;
-height: 50px;
-border-bottom: 2px solid #000;
-font-family: Arial;
-font-size: 12px;
-padding: 5px 10px;
-background: white;
-}
 
-body{
-margin-top: 60px;
-}
 body{
 font-family:Arial;
 counter-reset: page;
@@ -1319,6 +1300,22 @@ let section = table.closest(".section");
 if(section) section.remove();
 
 }
+
+function parseCustomDate(str){
+
+if(!str) return null;
+
+/* FORMAT: 14/04/2026, 02:51:26 */
+let parts = str.split(",");
+if(parts.length < 2) return null;
+
+let datePart = parts[0].trim();   // 14/04/2026
+let timePart = parts[1].trim();   // 02:51:26
+
+let [day, month, year] = datePart.split("/");
+
+return new Date(`${year}-${month}-${day}T${timePart}`);
+} 
  
 function processFile(){
 let file=document.getElementById("fileInput").files[0];
@@ -1360,10 +1357,14 @@ if(measData.length){
 
 /* DURATION */
 
-if(startTime && endTime){
-    let diff = new Date(endTime) - new Date(startTime);
+let start = parseCustomDate(startTime);
+let end = parseCustomDate(endTime);
+
+if(start && end){
+    let diff = end - start;
     let mins = Math.floor(diff / 60000);
     duration = mins + " mins";
+}
 }
 
 
