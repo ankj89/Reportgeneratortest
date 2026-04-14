@@ -1180,23 +1180,53 @@ let content = document.getElementById("reportPreview").innerHTML;
 let styles = `
 <style>
 
+/* GLOBAL */
 body{
-font-family:Arial;
-counter-reset: page;
+font-family: Arial, Helvetica, sans-serif;
+font-size:11px;
+line-height:1.4;
+color:#000;
 }
 
-/* PAGE */
-@page{
-size:A4 landscape;
-margin:12mm;
+/* TITLE */
+h1{
+font-size:18px;
+font-weight:700;
+margin-bottom:5px;
 }
 
-/* FOOTER PAGE NUMBER */
-footer{
-position: fixed;
-bottom: 0;
-right: 10px;
-font-size: 10px;
+/* SECTION HEADINGS */
+h2{
+font-size:14px;
+font-weight:700;
+margin-top:15px;
+margin-bottom:8px;
+border-bottom:1.5px solid #000;
+padding-bottom:4px;
+text-transform:uppercase;
+}
+
+/* SUB HEADINGS */
+h3{
+font-size:12px;
+font-weight:600;
+margin-top:10px;
+margin-bottom:4px;
+}
+
+/* TEXT BLOCK */
+p{
+margin:3px 0;
+}
+
+/* TWO COLUMN LAYOUT */
+.flex-row{
+display:flex;
+gap:20px;
+}
+
+.flex-col{
+width:50%;
 }
 
 /* TABLE */
@@ -1204,27 +1234,54 @@ table{
 width:100%;
 border-collapse:collapse;
 table-layout:fixed;
+margin-top:8px;
 }
 
-th,td{
+th, td{
 border:1px solid #000;
 padding:6px;
-font-size:11px;
+font-size:10.5px;
+vertical-align:top;
 word-break:break-word;
 }
 
+/* HEADER ROW */
 th{
-background:#d9d9d9;
-color:#000;
+background:#e6e6e6;
+font-weight:700;
+text-align:left;
 }
+
+/* REPEAT HEADER */
+thead{
+display:table-header-group;
+}
+
+/* PAGE CONTROL */
 .section{
-page-break-before: always;
-break-before: page;
+page-break-before:always;
 }
 
 .section:first-child{
-page-break-before: auto;
+page-break-before:auto;
 }
+
+/* AVOID ROW BREAK */
+tr{
+page-break-inside:avoid;
+}
+
+/* FOOTER */
+footer{
+position:fixed;
+bottom:0;
+right:10px;
+font-size:10px;
+thead {
+display: table-header-group;
+}
+}
+
 </style>
 `;
 
@@ -1334,10 +1391,7 @@ let rooms=getUnique(matrixDataRaw,"Room");
 let html = `
 <div id="reportContainer">
 
-<header>
-<b>SITE VALIDATION REPORT</b><br>
-Generated On: ${new Date().toLocaleString()}
-</header>
+
 <h1 style="margin:0;">SITE VALIDATION REPORT</h1>
 <div style="font-size:12px;">
 <b>Generated On:</b> ${new Date().toLocaleString()}
@@ -1369,53 +1423,74 @@ if(start && end){
 
 
 html += `
-<div class="section">
-<h2>Validation Summary</h2>
-<table>
-<tr><th>Field</th><th>Value</th></tr>
+<div class="section" style="display:flex; gap:20px">
 
-<tr><td>Validator Name</td><td contenteditable="true">Enter input here</td></tr>
-<tr><td>Validator Email</td><td contenteditable="true">Enter input here</td></tr>
+<!-- LEFT -->
+<div style="width:50%">
+<h2>VALIDATION SUMMARY</h2>
 
-<tr><td>ID Name</td><td contenteditable="true">Enter input here</td></tr>
-<tr><td>ID Email</td><td contenteditable="true">Enter input here</td></tr>
+<p><b>Validator Name:</b> <span contenteditable="true">Enter input here</span></p>
+<p><b>Validator Email:</b> <span contenteditable="true">Enter input here</span></p>
 
-<tr><td>BMD Name</td><td contenteditable="true">Enter input here</td></tr>
-<tr><td>BMD Email</td><td contenteditable="true">Enter input here</td></tr>
+<p><b>ID Name:</b> <span contenteditable="true">Enter input here</span></p>
+<p><b>ID Email:</b> <span contenteditable="true">Enter input here</span></p>
 
-<tr><td>Start Time</td><td>${startTime || ""}</td></tr>
-<tr><td>End Time</td><td>${endTime}</td></tr>
-<tr><td>Total Time</td><td>${duration || "Auto after input"}</td></tr>
+<p><b>BMD Name:</b> <span contenteditable="true">Enter input here</span></p>
+<p><b>BMD Email:</b> <span contenteditable="true">Enter input here</span></p>
 
-</table>
+<p><b>Start Time:</b> ${startTime || ""}</p>
+<p><b>End Time:</b> ${endTime || ""}</p>
+<p><b>Total Time:</b> ${duration || ""}</p>
 </div>
+
+<!-- RIGHT -->
+<div style="width:50%">
+<h2>PROJECT DETAILS</h2>
 `;
-/* PROJECT */
-html+='<div class="section"><h2>Project Details</h2><table><tr><th>Field</th><th>Value</th></tr>';
+
 let projectData = matrixDataRaw[0] || {};
 for(let k in projectData){
 if(!["Room","Section","Item","Value","Walls"].includes(k)){
-html+=`<tr><td>${k}</td><td>${projectData[k]}</td></tr>`;
-}}
-html+='</table></div>';
-
-/* SOCIETY */
-if(societyData.length){
-html+='<div class="section"><h2>Society Constraints</h2><table><tr><th>Question</th><th>Value</th></tr>';
-let grouped={};
-societyData.forEach(s=>{let cat=s.Category||"General";if(!grouped[cat]) grouped[cat]=[];grouped[cat].push(s);});
-for(let cat in grouped){
-html+=`<tr class="header"><td colspan="2">${cat}</td></tr>`;
-grouped[cat].forEach(i=>html+=`<tr><td>${i.Question}</td><td>${i.Value||""}</td></tr>`);
+html += `<p><b>${k}:</b> ${projectData[k]}</p>`;
 }
-html+='</table></div>';
+}
+
+html += `
+</div>
+</div>
+`;
+
+if(societyData.length){
+
+html += `<div class="section">
+<h2>SOCIETY AND WORK ENVIRONMENT</h2>`;
+
+let grouped = {};
+
+societyData.forEach(s=>{
+let cat = s.Category || "GENERAL";
+if(!grouped[cat]) grouped[cat] = [];
+grouped[cat].push(s);
+});
+
+for(let cat in grouped){
+
+html += `<h3 style="margin-top:15px">${cat.toUpperCase()}</h3>`;
+
+grouped[cat].forEach(i=>{
+html += `<p><b>${i.Question}:</b> ${i.Value || ""}</p>`;
+});
+
+}
+
+html += `</div>`;
 }
 
 /* MATRIX */
 /* -------- ROOM MATRIX -------- */
-html+='<div class="section"><h2>Room Validation Matrix</h2><table><tr><th>Question</th>';
+html+='<div class="section"><h2>Room Validation Matrix</h2><table><thead><tr><th>Question</th>';
 rooms.forEach(r=>html+=`<th>${r}</th>`);
-html+='</tr>';
+html+='</tr></thead><tbody>';
 
 let roomQs = matrixDataRaw.filter(x=>x.Section==="Room");
 let uniqueRoomQs = [...new Set(roomQs.map(x=>x.Item))];
@@ -1445,12 +1520,12 @@ ${comment || ""}
 });
 html+='</tr>';
 });
-html+='</table></div>';
+html+='</tbody></table></div>';
 
 /* -------- WALL MATRIX -------- */
-html+='<div class="section"><h2>Wall Validation Matrix</h2><table><tr><th>Question</th>';
+html+='<div class="section"><h2>Wall Validation Matrix</h2><table><thead><tr><th>Question</th>';
 rooms.forEach(r=>html+=`<th>${r}</th>`);
-html+='</tr>';
+html+='</tr></thead><tbody>';
 
 let wallQs = matrixDataRaw.filter(x=>x.Section==="Wall");
 let uniqueWallQs = [...new Set(wallQs.map(x=>x.Item))];
@@ -1480,7 +1555,7 @@ ${comment || ""}
 });
 html+='</tr>';
 });
-html+='</table></div>';
+html+='</tbody></table></div>';
 
 /* INSIGHTS */
 /* ================= INSIGHTS ================= */
@@ -1508,13 +1583,16 @@ let html = `<div class="section">
 <button onclick="addInsightRow('${tableId}')">+ Add Row</button>
 
 <table id="${tableId}">
+<thead>
 <tr>
 <th>SNo</th>
 <th>Insights</th>
 <th>Type of Insight</th>
 <th>Category</th>
 <th style="width:30%">Remarks</th>
-</tr>`;
+</tr>
+</thead>
+<tbody>;
 
 let rows = Math.max(dataArr.length, 5);
 
@@ -1535,7 +1613,7 @@ html += `<tr>
 
 }
 
-html += `</table></div>`;
+html += `</tbody></table></div>`;
 
 return html;
 }
