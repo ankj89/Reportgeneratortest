@@ -1278,9 +1278,7 @@ bottom:0;
 right:10px;
 font-size:10px;
 }
-thead {
-display: table-header-group;
-}
+
 </style>
 `;
 
@@ -1390,11 +1388,9 @@ let rooms=getUnique(matrixDataRaw,"Room");
 let html = `
 <div id="reportContainer">
 
-
 <h1 style="margin:0;">SITE VALIDATION REPORT</h1>
 <div style="font-size:12px;">
 <b>Generated On:</b> ${new Date().toLocaleString()}
-</div>
 </div>
 `;
 
@@ -1592,7 +1588,7 @@ let html = `<div class="section">
 </tr>
 </thead>
 <tbody>
-
+`;
 let rows = Math.max(dataArr.length, 5);
 
 for(let i=0;i<rows;i++){
@@ -1624,7 +1620,7 @@ html += createInsightTable("Society Insights", societyInsights, "societyTable");
 rooms.forEach((room, index)=>{
 html += createInsightTable(`${room} Insights`, roomInsights[room], `roomTable_${index}`);
 });
-
+html += `</div>`;
 document.getElementById("reportPreview").innerHTML=html;
 document.getElementById("saveBtn").classList.remove("hidden");
 if(!currentReportId){
