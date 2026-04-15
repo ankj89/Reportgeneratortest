@@ -905,14 +905,14 @@ let maxDrop = effective - target;
 let minDrop = effective - permicible;
 
 if(maxDrop < 75){
-msg.push( `Available depth only ${maxDrop} mm. False ceiling not recommended`);
+msgs.push( `Available depth only ${maxDrop} mm. False ceiling not recommended`);
 }
 /* minimum drop (practical service gap) */
 if(permicible>2490){
- msg.push( `Recommended false ceiling drop: ${minDrop} mm to ${maxDrop} mm`);
+ msgs.push( `Recommended false ceiling drop: ${minDrop} mm to ${maxDrop} mm`);
 }  // can adjust to 75–100
 if(permicible<2490){
-msg.push( `Recommended false ceiling drop: 75 mm to ${maxDrop} mm`);
+msgs.push( `Recommended false ceiling drop: 75 mm to ${maxDrop} mm`);
 }
 
 
