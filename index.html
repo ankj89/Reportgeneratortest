@@ -877,13 +877,15 @@ if(beam>0){
 msgs.push(`Offset beam present. Clear height at beam: ${beam} mm`);
 }
 if(beam-2490<0){
-msgs.push(`Offset beam cannot be concelaed in flat false ceiling as clear height will become <8ft. Periperal False Ceiling suggested or keep beam exposed/boxed`};
+msgs.push(`Offset beam cannot be concelaed in flat false ceiling as clear height will become <8ft. Periperal False Ceiling suggested or keep beam exposed/boxed`);
+}
 /* SPRINKLER / UTILITIES */
 if(sprinkler>0){
 msgs.push(`Utilities/sprinkler/HVAC line present. Clear height: ${sprinkler} mm`);
 }
 if(sprinkler-2490<0){
-msgs.push(`Utilities cannot be concelaed in flat false ceiling as clear height will become <8ft. Periperal False Ceiling suggested`};
+msgs.push(`Utilities cannot be concelaed in flat false ceiling as clear height will become <8ft. Periperal False Ceiling suggested`);
+}
 /* SPRINKLER / UTILITIES */
 /* ---------------- EFFECTIVE HEIGHT ---------------- */
 
@@ -908,17 +910,11 @@ msg.push( `Available depth only ${maxDrop} mm. False ceiling not recommended`);
 /* minimum drop (practical service gap) */
 if(permicible>2490){
  msg.push( `Recommended false ceiling drop: ${minDrop} mm to ${maxDrop} mm`);
-};  // can adjust to 75–100
+}  // can adjust to 75–100
 if(permicible<2490){
 msg.push( `Recommended false ceiling drop: 75 mm to ${maxDrop} mm`);
-}; 
-
-
-/* ---------------- VALIDATIONS ---------------- */
-
-if(maxDrop < 75){
-msg.push( `Available depth only ${maxDrop} mm. False ceiling not recommended`);
 }
+
 
 
 /* ---------------- AC POCKET LOGIC ---------------- */
