@@ -1209,12 +1209,12 @@ let table = row.closest("table")
 
 row.remove()
 
-// 🔥 REINDEX
-[...table.rows].slice(1).forEach((r,i)=>{
+// 🔥 REINDEX (SAFE VERSION)
+Array.from(table.rows).slice(1).forEach((r,i)=>{
 r.cells[0].innerHTML = `${i+1} <span onclick="deleteInsightRow(this)" style="color:red;cursor:pointer;margin-left:6px;">❌</span>`
 })
 
-} 
+}
 function saveInsights(){
 
 insightsData = [];
