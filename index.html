@@ -1102,38 +1102,6 @@ msgs.push( `Recommended false ceiling drop: 75 mm to ${maxDrop} mm`);
 }
 
 
-
-/* ---------------- AC POCKET LOGIC ---------------- */
-
-let acWalls = [];
-
-[
-["NW", m.doorsoffitNW, m.winSoffitNW],
-["EW", m.doorsoffitEW, m.winSoffitEW],
-["SW", m.doorsoffitSW, m.winSoffitSW],
-["WW", m.doorsoffitWW, m.winSoffitWW]
-].forEach(([w,d1,d2])=>{
-
-let v1 = Number(d1)||0;
-let v2 = Number(d2)||0;
-
-/* available drop space */
-let available = Math.min(
-v1>0?v1:9999,
-v2>0?v2:9999
-);
-
-/* if available < required drop */
-if(available < (minDrop + 100)){ // 100 buffer for AC piping
-acWalls.push(w);
-}
-
-});
-
-if(acWalls.length){
-msgs.push(`AC pocket required on walls ${acWalls.join(", ")} due to insufficient soffit depth`);
-}
-
 /* ---------------- FINAL ---------------- */
 
 return msgs.join(" | ");
@@ -1141,6 +1109,63 @@ return msgs.join(" | ");
 }
 },
 
+{
+id:"AC_SOFFIT_FINAL",
+type:"measurement",
+condition:{fields:[
+"doorsoffitNW","doorsoffitEW","doorsoffitSW","doorsoffitWW",
+"winSoffitNW","winSoffitEW","winSoffitSW","winSoffitWW"
+]},
+
+output:(v,m)=>{
+
+const AC_REQUIRED = 600
+const FC_DROP = 150
+
+let issues = []
+
+;[
+["NW", m.doorsoffitNW, m.winSoffitNW],
+["EW", m.doorsoffitEW, m.winSoffitEW],
+["SW", m.doorsoffitSW, m.winSoffitSW],
+["WW", m.doorsoffitWW, m.winSoffitWW]
+].forEach(([w, d, wS])=>{
+
+let door = Number(d) || 0
+let win = Number(wS) || 0
+
+let soffit = Math.max(door, win)
+
+if(!soffit) return
+
+let available = soffit - FC_DROP
+
+if(available >= AC_REQUIRED){
+return
+}
+
+let status = ""
+
+if(available >= 450){
+status = "Tight - pocket recommended"
+}else{
+status = "Not feasible - redesign required"
+}
+
+issues.push(`${w}: ${Math.round(available)} mm → ${status}`)
+
+})
+
+if(!issues.length) return null
+
+let multi = issues.length >= 2
+
+return `AC clearance constraint: ${issues.join(" | ")}${multi ? ". Consider island ceiling" : ""}`
+
+}
+},
+
+ 
 {
 id:"DOOR_SIZE",
 type:"measurement",
