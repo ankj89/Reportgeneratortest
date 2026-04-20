@@ -106,6 +106,18 @@ background:#fffbe6;
 
 <div class="card">
 <h2>Validation Report Generator 1.2</h2>
+ <div id="dropZone" style="
+border:2px dashed #1e3d8f;
+padding:20px;
+text-align:center;
+margin-bottom:10px;
+background:#f8faff;
+cursor:pointer;
+">
+Drop Excel file here or click to upload
+</div>
+
+<input type="file" id="fileInput" accept=".xlsx" style="display:none;" />
 <input type="file" id="fileInput" accept=".xlsx" />
 <br>
 <button id="generateBtn">Generate Report</button>
@@ -168,18 +180,10 @@ return `${pid}_${cx} (${ts})`;
 
 function getElevationMap(m){
 
-/*
-Expected in measurement sheet:
-E1,E2,E3,E4 stored OR mapping columns
-Fallback to NW order if missing
-*/
-
-let elevs = [
-m.E1 || m.e1,
-m.E2 || m.e2,
-m.E3 || m.e3,
-m.E4 || m.e4
-].filter(Boolean)
+let elevs = (m.elevations || "")
+.split(",")
+.map(e=>e.trim())
+.filter(Boolean)
 
 if(elevs.length === 4){
 return {
@@ -190,7 +194,6 @@ WW: elevs[3]
 }
 }
 
-/* fallback */
 return {
 NW:"NW",
 EW:"EW",
@@ -1505,241 +1508,204 @@ return ""
  
 function downloadPDF(){
 
-/* ---------------- PREP DATA ---------------- */
+let rooms = [...new Set(matrixDataRaw.map(x=>x.Room).filter(Boolean))]
 
-let rooms = getUnique(matrixDataRaw,"Room")
+/* ---------------- FIX ELEVATION ---------------- */
+function getElevationMap(m){
+let elevs = (m.elevations || "")
+.split(",")
+.map(e=>e.trim())
+.filter(Boolean)
+
+if(elevs.length === 4){
+return {NW:elevs[0],EW:elevs[1],SW:elevs[2],WW:elevs[3]}
+}
+
+return {NW:"NW",EW:"EW",SW:"SW",WW:"WW"}
+}
+
+/* ---------------- RUN RULE ENGINE ---------------- */
 
 let autoInsights = runRuleEngine(rooms)
 
-/* SPLIT */
 let roomInsights = {}
 let societyInsights = []
 
-rooms.forEach(r => roomInsights[r] = [])
+rooms.forEach(r=>roomInsights[r]=[])
 
 autoInsights.forEach(i=>{
-if(i.room === "All") societyInsights.push(i.text)
+if(i.room==="All") societyInsights.push(i.text)
 else roomInsights[i.room].push(i.text)
 })
 
-/* COMBINE ALL INSIGHTS */
-let allInsights = [...societyInsights]
+/* ---------------- PROJECT DETAILS ---------------- */
 
-rooms.forEach(r=>{
-allInsights = allInsights.concat(roomInsights[r])
+let project = {}
+matrixDataRaw.forEach(r=>{
+if(!r.Room && r.Item && r.Value){
+project[r.Item]=r.Value
+}
 })
-/* 🔥 REMOVE DUPLICATES */
-allInsights = [...new Set(allInsights)]
-/* ---------------- BUILD PDF CONTENT ---------------- */
+
+/* ---------------- BUILD CONTENT ---------------- */
 
 let content = ""
 
-/* ---------------- INDEX ---------------- */
-
+/* INDEX */
 content += `
 <div class="section">
 <h1>INDEX</h1>
 <table>
-<tr><th>Section</th><th>Page</th></tr>
-<tr><td>Validation Summary & Project Details</td><td>1</td></tr>
-<tr><td>Insights</td><td>2</td></tr>
-<tr><td>Society & Work Environment</td><td>3</td></tr>
-<tr><td>Measurements</td><td>4</td></tr>
-<tr><td>Room & Wall Matrix</td><td>5</td></tr>
+<tr><th>Section</th></tr>
+<tr><td>Validation Summary & Project Details</td></tr>
+<tr><td>Insights</td></tr>
+<tr><td>Society</td></tr>
+<tr><td>Room & Wall Matrix</td></tr>
+<tr><td>Measurements</td></tr>
 </table>
 </div>
 `
 
-/* ---------------- SUMMARY + PROJECT ---------------- */
-
-let project = matrixDataRaw[0] || {}
-
+/* SUMMARY */
 content += `<div class="section">
-<h2>VALIDATION SUMMARY & PROJECT DETAILS</h2>
-`
+<h2>VALIDATION SUMMARY & PROJECT DETAILS</h2>`
 
-for(let k in project){
-if(
-!["Room","Section","Item","Value","Walls"].includes(k) &&
-project[k]
-){
-content += `<p><b>${k}:</b> ${project[k] || ""}</p>`
-}
-}
+Object.keys(project).forEach(k=>{
+content += `<p><b>${k}:</b> ${project[k]}</p>`
+})
 
 content += `</div>`
 
 /* ---------------- INSIGHTS ---------------- */
 
-content += `<div class="section">
-<h2>INSIGHTS</h2>
-<table>
-<tr>
-<th style="width:60px">SNo</th>
-<th>Insight</th>
-</tr>
-`
+content += `<div class="section"><h2>INSIGHTS</h2>`
 
-allInsights.forEach((txt,i)=>{
+/* SOCIETY */
+content += `<h3>Society</h3>
+<table>
+<tr><th>SNo</th><th>Insight</th><th>Type</th><th>Category</th><th>Remarks</th></tr>`
+
+societyInsights.forEach((txt,i)=>{
+let meta = classifyInsight(txt)
 content += `<tr>
 <td>${i+1}</td>
 <td>${txt}</td>
+<td>${meta.type}</td>
+<td>${meta.category}</td>
+<td></td>
 </tr>`
 })
 
-content += `</table></div>`
+content += `</table>`
 
-/* ---------------- SOCIETY ---------------- */
+/* ROOM WISE */
+rooms.forEach(room=>{
+content += `<h3>${room}</h3>
+<table>
+<tr><th>SNo</th><th>Insight</th><th>Type</th><th>Category</th><th>Remarks</th></tr>`
 
-content += `<div class="section">
-<h2>SOCIETY & WORK ENVIRONMENT</h2>
-`
-
-if(societyData.length){
-societyData.forEach(s=>{
-content += `<p><b>${s.Question}:</b> ${s.Value || ""}</p>`
+(roomInsights[room]||[]).forEach((txt,i)=>{
+let meta = classifyInsight(txt)
+content += `<tr>
+<td>${i+1}</td>
+<td>${txt}</td>
+<td>${meta.type}</td>
+<td>${meta.category}</td>
+<td></td>
+</tr>`
 })
-}else{
-content += `<p>No society constraints captured</p>`
-}
+
+content += `</table>`
+})
 
 content += `</div>`
 
+/* ---------------- SOCIETY DETAILS ---------------- */
+
+content += `<div class="section"><h2>SOCIETY DETAILS</h2>`
+
+societyData.forEach(s=>{
+content += `<p><b>${s.Question}:</b> ${s.Value||""}</p>`
+})
+
+content += `</div>`
+
+/* ---------------- ROOM MATRIX ---------------- */
+
+content += `<div class="section"><h2>ROOM MATRIX</h2><table>
+<tr><th>Question</th>${rooms.map(r=>`<th>${r}</th>`).join("")}</tr>`
+
+let roomQs = [...new Set(matrixDataRaw.filter(x=>x.Section==="Room").map(x=>x.Item))]
+
+roomQs.forEach(q=>{
+content += `<tr><td>${q}</td>`
+
+rooms.forEach(r=>{
+let rec = matrixDataRaw.find(x=>x.Room===r && x.Item===q && x.Section==="Room")||{}
+content += `<td>${rec.Value||""}<br><span style="font-size:10px">${rec.Comment||""}</span></td>`
+})
+
+content += `</tr>`
+})
+
+content += `</table></div>`
+
+/* ---------------- WALL MATRIX ---------------- */
+
+content += `<div class="section"><h2>WALL MATRIX</h2><table>
+<tr><th>Question</th>${rooms.map(r=>`<th>${r}</th>`).join("")}</tr>`
+
+let wallQs = [...new Set(matrixDataRaw.filter(x=>x.Section==="Wall").map(x=>x.Item))]
+
+wallQs.forEach(q=>{
+content += `<tr><td>${q}</td>`
+
+rooms.forEach(r=>{
+let rec = matrixDataRaw.find(x=>x.Room===r && x.Item===q && x.Section==="Wall")||{}
+content += `<td>${rec.Value||""} ${rec.Walls?`(${rec.Walls})`:""}
+<br><span style="font-size:10px">${rec.Comment||""}</span></td>`
+})
+
+content += `</tr>`
+})
+
+content += `</table></div>`
+
 /* ---------------- MEASUREMENTS ---------------- */
 
-content += `<div class="section">
-<h2>MEASUREMENTS</h2>
-<table>
-<tr>
-<th>Room</th>
-<th>Details</th>
-</tr>
-`
+content += `<div class="section"><h2>MEASUREMENTS</h2><table>
+<tr><th>Room</th><th>Details</th></tr>`
 
 measData.forEach(m=>{
-content += `<tr>
-<td>${m.Room || ""}</td>
-<td>
+content += `<tr><td>${m.Room||""}</td><td>
 ${Object.entries(m)
-.filter(([k,v]) => k !== "Room" && v)
-.map(([k,v]) => `<b>${k}:</b> ${v}`)
+.filter(([k,v])=>k!=="Room" && v)
+.map(([k,v])=>`<b>${k}:</b> ${v}`)
 .join("<br>")}
-</td>
-</tr>`
+</td></tr>`
 })
 
 content += `</table></div>`
 
-/* ---------------- MATRIX ---------------- */
+/* ---------------- STYLE ---------------- */
 
-content += `<div class="section">
-<h2>ROOM & WALL VALIDATION MATRIX</h2>
-<table>
-<tr>
-<th>Room</th>
-<th>Section</th>
-<th>Item</th>
-<th>Value</th>
-<th>Walls</th>
-</tr>
-`
-
-matrixDataRaw.forEach(r=>{
-content += `<tr>
-<td>${r.Room || ""}</td>
-<td>${r.Section || ""}</td>
-<td>${r.Item || ""}</td>
-<td>${r.Value || ""}</td>
-<td>${r.Walls || ""}</td>
-</tr>`
-})
-
-content += `</table></div>`
-
-/* ---------------- STYLES ---------------- */
-
-let styles = `
+let style = `
 <style>
-
-body{
-font-family: Arial, Helvetica, sans-serif;
-font-size:11px;
-line-height:1.4;
-color:#000;
-margin:10px;
-border:2px solid #000;
-padding:12px;
-}
-
-/* HEADINGS */
-h1{
-font-size:18px;
-margin-bottom:10px;
-}
-
-h2{
-font-size:14px;
-margin-bottom:6px;
-border-bottom:1px solid #000;
-padding-bottom:3px;
-}
-
-/* TABLE */
-table{
-width:100%;
-border-collapse:collapse;
-margin-top:8px;
-table-layout:fixed;
-}
-
-th, td{
-border:1px solid #000;
-padding:5px;
-font-size:10px;
-vertical-align:top;
-word-break:break-word;
-}
-
-th{
-background:#e6e6e6;
-font-weight:bold;
-}
-
-/* PAGE BREAK */
-.section{
-page-break-before:always;
-margin-top:10px;
-}
-
-.section:first-child{
-page-break-before:auto;
-}
-
-/* AVOID ROW BREAK */
-tr{
-page-break-inside:avoid;
-}
-
+body{font-family:Arial;font-size:11px;border:2px solid #000;padding:10px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #000;padding:5px;font-size:10px}
+.section{page-break-before:always}
+.section:first-child{page-break-before:auto}
 </style>
 `
 
 /* ---------------- PRINT ---------------- */
 
-let win = window.open('', '', 'height=700,width=1000')
-
-win.document.write(`
-<html>
-<head>${styles}</head>
-<body>${content}</body>
-</html>
-`)
-
+let win = window.open("")
+win.document.write(`<html><head>${style}</head><body>${content}</body></html>`)
 win.document.close()
 
-setTimeout(()=>{
-win.print()
-},400)
-
+setTimeout(()=>win.print(),500)
 }
  
 /* 🔷 HELPER */
@@ -2101,6 +2067,34 @@ reader.readAsArrayBuffer(file);
 document.addEventListener("DOMContentLoaded",()=>{
 bindEvents();
 populateReportList();
+let dropZone = document.getElementById("dropZone")
+let fileInput = document.getElementById("fileInput")
+
+if(dropZone && fileInput){
+
+dropZone.onclick = ()=> fileInput.click()
+
+dropZone.ondragover = (e)=>{
+e.preventDefault()
+dropZone.style.background="#eef2ff"
+}
+
+dropZone.ondragleave = ()=>{
+dropZone.style.background="#f8faff"
+}
+
+dropZone.ondrop = (e)=>{
+e.preventDefault()
+dropZone.style.background="#f8faff"
+
+fileInput.files = e.dataTransfer.files
+processFile()
+}
+
+}
+
+
+ 
 document.addEventListener("focusin", function(e){
 if(e.target.matches("[contenteditable].editable-placeholder")){
 if(e.target.innerText.trim() === "Manual input required"){
