@@ -1049,6 +1049,7 @@ let parts = w.issues.map(i=>
 `${i.type}: ${i.deviation} mm → ${i.action}`
 )
 
+let map = getElevationMap(m)
 return `${map[w.wall] || w.wall}: ${parts.join(", ")}`
 }).join(" | ")
 
@@ -1188,7 +1189,7 @@ status = "Tight - pocket recommended"
 }else{
 status = "Not feasible - redesign required"
 }
-
+let map = getElevationMap(m)
 issues.push(`${map[w] || w}: ${Math.round(available)} mm → ${status}`)
 
 })
@@ -1259,9 +1260,11 @@ let msgs=[];
 let x=Number(val)||0;
 
 if(x>5 && x<=20){
+ let map = getElevationMap(m)
 msgs.push(`${map[w] || w}: Undulation 5–20mm. Punning required`);
 }
 else if(x>20){
+ let map = getElevationMap(m)
 msgs.push(`${map[w] || w}: Undulation >20mm. Plastering required`);                 
 }
 });
@@ -1525,7 +1528,8 @@ let allInsights = [...societyInsights]
 rooms.forEach(r=>{
 allInsights = allInsights.concat(roomInsights[r])
 })
-
+/* 🔥 REMOVE DUPLICATES */
+allInsights = [...new Set(allInsights)]
 /* ---------------- BUILD PDF CONTENT ---------------- */
 
 let content = ""
@@ -1555,7 +1559,10 @@ content += `<div class="section">
 `
 
 for(let k in project){
-if(!["Room","Section","Item","Value","Walls"].includes(k)){
+if(
+!["Room","Section","Item","Value","Walls"].includes(k) &&
+project[k]
+){
 content += `<p><b>${k}:</b> ${project[k] || ""}</p>`
 }
 }
@@ -1612,7 +1619,12 @@ content += `<div class="section">
 measData.forEach(m=>{
 content += `<tr>
 <td>${m.Room || ""}</td>
-<td>${JSON.stringify(m)}</td>
+<td>
+${Object.entries(m)
+.filter(([k,v]) => k !== "Room" && v)
+.map(([k,v]) => `<b>${k}:</b> ${v}`)
+.join("<br>")}
+</td>
 </tr>`
 })
 
