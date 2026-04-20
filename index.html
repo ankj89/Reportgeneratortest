@@ -165,6 +165,40 @@ let ts = now.toLocaleString();
 return `${pid}_${cx} (${ts})`;
 
 }
+
+function getElevationMap(m){
+
+/*
+Expected in measurement sheet:
+E1,E2,E3,E4 stored OR mapping columns
+Fallback to NW order if missing
+*/
+
+let elevs = [
+m.E1 || m.e1,
+m.E2 || m.e2,
+m.E3 || m.e3,
+m.E4 || m.e4
+].filter(Boolean)
+
+if(elevs.length === 4){
+return {
+NW: elevs[0],
+EW: elevs[1],
+SW: elevs[2],
+WW: elevs[3]
+}
+}
+
+/* fallback */
+return {
+NW:"NW",
+EW:"EW",
+SW:"SW",
+WW:"WW"
+}
+}
+ 
  
 function saveCurrentReport(){
 
@@ -217,6 +251,9 @@ return Array.from(wallSet)
 }
 
 function analyzeWall(w, m){
+
+let map = getElevationMap(m)
+let wallName = map[w] || w
 
 let issues = []
 
@@ -1012,7 +1049,7 @@ let parts = w.issues.map(i=>
 `${i.type}: ${i.deviation} mm → ${i.action}`
 )
 
-return `${w.wall}: ${parts.join(", ")}`
+return `${map[w.wall] || w.wall}: ${parts.join(", ")}`
 }).join(" | ")
 
 return [summary, detail].filter(Boolean).join(". ")
@@ -1152,7 +1189,7 @@ status = "Tight - pocket recommended"
 status = "Not feasible - redesign required"
 }
 
-issues.push(`${w}: ${Math.round(available)} mm → ${status}`)
+issues.push(`${map[w] || w}: ${Math.round(available)} mm → ${status}`)
 
 })
 
@@ -1222,10 +1259,10 @@ let msgs=[];
 let x=Number(val)||0;
 
 if(x>5 && x<=20){
-msgs.push(`${w}: Undulation 5–20mm. Punning required`);
+msgs.push(`${map[w] || w}: Undulation 5–20mm. Punning required`);
 }
 else if(x>20){
-msgs.push(`${w}: Undulation >20mm. Plastering required`);
+msgs.push(`${map[w] || w}: Undulation >20mm. Plastering required`);                 
 }
 });
 
@@ -1465,137 +1502,182 @@ return ""
  
 function downloadPDF(){
 
-// 🔥 CLONE CLEAN COPY (DO NOT USE RAW HTML)
-let clone = document.getElementById("reportPreview").cloneNode(true)
+/* ---------------- PREP DATA ---------------- */
 
-// ---------------- CLEAN UI ----------------
+let rooms = getUnique(matrixDataRaw,"Room")
 
-// ❌ REMOVE ALL BUTTONS
-clone.querySelectorAll("button").forEach(b => b.remove())
+let autoInsights = runRuleEngine(rooms)
 
-// ❌ REMOVE DELETE ICONS (❌)
-clone.querySelectorAll("span[onclick*='deleteInsightRow']").forEach(el => el.remove())
+/* SPLIT */
+let roomInsights = {}
+let societyInsights = []
 
-// ❌ REMOVE COLLAPSIBLE HEADERS
-clone.querySelectorAll(".collapsible-header").forEach(el => el.remove())
+rooms.forEach(r => roomInsights[r] = [])
 
-// ✅ EXPAND ALL CONTENT
-clone.querySelectorAll(".collapsible-content").forEach(el => {
-    el.style.display = "block"
+autoInsights.forEach(i=>{
+if(i.room === "All") societyInsights.push(i.text)
+else roomInsights[i.room].push(i.text)
 })
 
-// ---------------- FIX FIRST PAGE BLANK ----------------
+/* COMBINE ALL INSIGHTS */
+let allInsights = [...societyInsights]
 
-// ❗ REMOVE page-break from FIRST section explicitly
-let firstSection = clone.querySelector(".section")
-if(firstSection){
-    firstSection.style.pageBreakBefore = "auto"
-}
-
-// ---------------- REMOVE EMPTY TABLES ----------------
-
-clone.querySelectorAll("table[id*='Table']").forEach(table=>{
-
-let hasData = false
-
-for(let i=1;i<table.rows.length;i++){
-
-let insight = table.rows[i].cells[1].innerText.trim()
-let remarks = table.rows[i].cells[4].innerText.trim()
-
-if(insight || remarks){
-hasData = true
-break
-}
-}
-
-if(!hasData){
-let section = table.closest(".section")
-if(section) section.remove()
-}
-
+rooms.forEach(r=>{
+allInsights = allInsights.concat(roomInsights[r])
 })
 
-// ---------------- FINAL HTML ----------------
-// 🔥 ADD ROOM HEADINGS IN PDF ONLY
+/* ---------------- BUILD PDF CONTENT ---------------- */
 
-clone.querySelectorAll("table[id^='roomTable_']").forEach((table, index)=>{
+let content = ""
 
-// extract index
-let roomIndex = table.id.split("_")[1]
+/* ---------------- INDEX ---------------- */
 
-// try to get room name from original UI
-let headers = document.querySelectorAll(".collapsible-header")
-let roomName = headers[roomIndex] ? headers[roomIndex].innerText.replace(" Insights","") : `Room ${parseInt(roomIndex)+1}`
+content += `
+<div class="section">
+<h1>INDEX</h1>
+<table>
+<tr><th>Section</th><th>Page</th></tr>
+<tr><td>Validation Summary & Project Details</td><td>1</td></tr>
+<tr><td>Insights</td><td>2</td></tr>
+<tr><td>Society & Work Environment</td><td>3</td></tr>
+<tr><td>Measurements</td><td>4</td></tr>
+<tr><td>Room & Wall Matrix</td><td>5</td></tr>
+</table>
+</div>
+`
 
-// 🔥 CREATE HEADING
-let heading = document.createElement("h2")
-heading.innerText = roomName + " Insights"
+/* ---------------- SUMMARY + PROJECT ---------------- */
 
-// 🔥 WRAP IN SECTION (PAGE BREAK)
-let wrapper = document.createElement("div")
-wrapper.classList.add("section")
+let project = matrixDataRaw[0] || {}
 
-// move table inside wrapper
-table.parentNode.insertBefore(wrapper, table)
-wrapper.appendChild(heading)
-wrapper.appendChild(table)
+content += `<div class="section">
+<h2>VALIDATION SUMMARY & PROJECT DETAILS</h2>
+`
 
+for(let k in project){
+if(!["Room","Section","Item","Value","Walls"].includes(k)){
+content += `<p><b>${k}:</b> ${project[k] || ""}</p>`
+}
+}
+
+content += `</div>`
+
+/* ---------------- INSIGHTS ---------------- */
+
+content += `<div class="section">
+<h2>INSIGHTS</h2>
+<table>
+<tr>
+<th style="width:60px">SNo</th>
+<th>Insight</th>
+</tr>
+`
+
+allInsights.forEach((txt,i)=>{
+content += `<tr>
+<td>${i+1}</td>
+<td>${txt}</td>
+</tr>`
 })
- 
-let content = clone.innerHTML
 
-// ---------------- PRINT STYLES ----------------
+content += `</table></div>`
+
+/* ---------------- SOCIETY ---------------- */
+
+content += `<div class="section">
+<h2>SOCIETY & WORK ENVIRONMENT</h2>
+`
+
+if(societyData.length){
+societyData.forEach(s=>{
+content += `<p><b>${s.Question}:</b> ${s.Value || ""}</p>`
+})
+}else{
+content += `<p>No society constraints captured</p>`
+}
+
+content += `</div>`
+
+/* ---------------- MEASUREMENTS ---------------- */
+
+content += `<div class="section">
+<h2>MEASUREMENTS</h2>
+<table>
+<tr>
+<th>Room</th>
+<th>Details</th>
+</tr>
+`
+
+measData.forEach(m=>{
+content += `<tr>
+<td>${m.Room || ""}</td>
+<td>${JSON.stringify(m)}</td>
+</tr>`
+})
+
+content += `</table></div>`
+
+/* ---------------- MATRIX ---------------- */
+
+content += `<div class="section">
+<h2>ROOM & WALL VALIDATION MATRIX</h2>
+<table>
+<tr>
+<th>Room</th>
+<th>Section</th>
+<th>Item</th>
+<th>Value</th>
+<th>Walls</th>
+</tr>
+`
+
+matrixDataRaw.forEach(r=>{
+content += `<tr>
+<td>${r.Room || ""}</td>
+<td>${r.Section || ""}</td>
+<td>${r.Item || ""}</td>
+<td>${r.Value || ""}</td>
+<td>${r.Walls || ""}</td>
+</tr>`
+})
+
+content += `</table></div>`
+
+/* ---------------- STYLES ---------------- */
 
 let styles = `
 <style>
 
-/* GLOBAL */
 body{
 font-family: Arial, Helvetica, sans-serif;
 font-size:11px;
 line-height:1.4;
 color:#000;
 margin:10px;
+border:2px solid #000;
+padding:12px;
 }
 
-/* TITLE */
+/* HEADINGS */
 h1{
 font-size:18px;
-font-weight:700;
-margin-bottom:5px;
+margin-bottom:10px;
 }
 
-/* SECTION HEADINGS */
 h2{
 font-size:14px;
-font-weight:700;
-margin-top:12px;
 margin-bottom:6px;
 border-bottom:1px solid #000;
 padding-bottom:3px;
-text-transform:uppercase;
-}
-
-/* SUB HEADINGS */
-h3{
-font-size:12px;
-font-weight:600;
-margin-top:8px;
-margin-bottom:4px;
-}
-
-/* TEXT */
-p{
-margin:2px 0;
 }
 
 /* TABLE */
 table{
 width:100%;
 border-collapse:collapse;
+margin-top:8px;
 table-layout:fixed;
-margin-top:6px;
 }
 
 th, td{
@@ -1604,28 +1686,21 @@ padding:5px;
 font-size:10px;
 vertical-align:top;
 word-break:break-word;
-white-space:normal;
-line-height:1.3;
 }
 
 th{
 background:#e6e6e6;
-font-weight:700;
+font-weight:bold;
 }
 
-/* REPEAT HEADER */
-thead{
-display:table-header-group;
-}
-
-/* PAGE BREAK CONTROL */
+/* PAGE BREAK */
 .section{
 page-break-before:always;
 margin-top:10px;
 }
 
 .section:first-child{
-page-break-before:auto !important;
+page-break-before:auto;
 }
 
 /* AVOID ROW BREAK */
@@ -1633,16 +1708,10 @@ tr{
 page-break-inside:avoid;
 }
 
-/* REMOVE EXTRA SPACE */
-div{
-margin:0;
-padding:0;
-}
-
 </style>
 `
 
-// ---------------- PRINT WINDOW ----------------
+/* ---------------- PRINT ---------------- */
 
 let win = window.open('', '', 'height=700,width=1000')
 
@@ -1654,8 +1723,6 @@ win.document.write(`
 `)
 
 win.document.close()
-
-// ---------------- PRINT ----------------
 
 setTimeout(()=>{
 win.print()
