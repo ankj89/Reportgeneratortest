@@ -1299,8 +1299,21 @@ if(res) insights.push({room,text:res});
 if(rule.type==="measurement"){
 measData.forEach(m=>{
 if(!m.Room) return;
-let vals=rule.condition.fields.map(f=>m[f]||null);
-let res=rule.output(vals,m);
+let vals = [];
+
+if(rule.condition && rule.condition.fields){
+    vals = rule.condition.fields.map(f=>m[f]||null);
+}
+
+ 
+let res = null;
+
+try{
+    res = rule.output(vals,m);
+}catch(e){
+    console.error("Rule failed:", rule.id, e);
+}
+ 
 if(res) insights.push({room:m.Room,text:res});
 });
 }
@@ -1493,26 +1506,20 @@ function getElevations(room){
 
 if(!wallMeasData || !wallMeasData.length) return []
 
-let rows = wallMeasData.filter(r => r.Room === room)
-
-/* fallback if no elevation column */
-if(!rows.length) return []
-
 return [...new Set(
-rows
+wallMeasData
+.filter(r => norm(r.Room) === norm(room))
 .map(r => r.Elevation)
 .filter(e => e && e !== "undefined")
 )]
 
 }
- function getWallValue(room, elevation, type){
-
-if(!wallMeasData || !wallMeasData.length) return 0
+function getWallValue(room, elevation, type){
 
 let rec = wallMeasData.find(r =>
-r.Room === room &&
-r.Elevation === elevation &&
-r.Parameter === type
+norm(r.Room) === norm(room) &&
+norm(r.Elevation) === norm(elevation) &&
+norm(r.Parameter) === norm(type)
 )
 
 return Number(rec?.Value) || 0
