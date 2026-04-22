@@ -865,8 +865,7 @@ type:"wall",
 condition:{itemIncludes:"major cracks",valueEquals:"yes"},
 output:(m)=>{
  
-let room = m[0].Room
-let walls = getWallsFromRoom(room);
+let walls = getWallsFromRoom(m);
 return `Structural cracks observed on walls (${walls}). Need suitable treatment (under Cx Scope)`;
 }
 },
