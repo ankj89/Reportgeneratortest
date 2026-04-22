@@ -330,7 +330,16 @@ populateReportList();
 
 alert("Report deleted");
 }
+function getWallsFromRoom(room){
 
+let elevs = getElevations(room)
+
+if(!elevs.length) return ""
+
+return elevs.join(", ")
+
+}
+ 
 function populateReportList(){
 
 let reports = getAllReports();
@@ -356,7 +365,7 @@ let t = (text || "").toLowerCase();
 /* TYPE */
 let type = "";
 
-if(t.includes("design") || t.includes("suggested") || t.includes("recommended")){
+if(t.includes("design") || t.includes("false") || t.includes("recommended")){
 type = "Design Input";
 }
 else if(t.includes("charges") || t.includes("cost") || t.includes("additional")){
@@ -735,21 +744,40 @@ output:()=> "Tile-on-tile installation feasible. Modifications to existing doors
 id:"REPAINT_FEASIBLE",
 type:"room",
 condition:{itemIncludes:"paint"},  // trigger once per room
+
 output:(matches)=>{
 
 let room = matches[0].Room;
 
-/* ---------------- FETCH ROOM DATA ---------------- */
+/* ---------------- FETCH DATA ---------------- */
 let wallsData = matrixDataRaw.filter(x => x.Room === room);
-let meas = measData.find(m => m.Room === room) || {};
 
-/* ---------------- CONDITIONS ---------------- */
+/* ---------------- UNDULATION CHECK (UPDATED) ---------------- */
 
-/* 1. UNDULATION CHECK */
-let undVals = [meas.undNW, meas.undEW, meas.undSW, meas.undWW]
-.map(Number).filter(x=>x>0);
+let elevs = getElevations(room)
 
-let undulationOK = undVals.length ? undVals.every(v => v <= 3) : true;
+let undulationOK = true
+
+if(elevs.length){
+
+undulationOK = elevs.every(e=>{
+
+let c = getWallValue(room, e, "Center")
+let u = getWallValue(room, e, "Upper")
+
+/* if no data → ignore wall */
+if(!c && !u) return true
+
+let dev = Math.abs((u || c) - c)
+
+/* threshold same as earlier logic */
+return dev <= 3
+
+})
+
+}
+
+/* ---------------- OTHER CONDITIONS ---------------- */
 
 /* 2. PUNNING / PLASTER CHECK */
 let hasPunning = wallsData.some(x =>
@@ -809,21 +837,21 @@ output:()=> "Undulation observed on true ceiling. Flat false ceiling suggested. 
 id:"LOAD_BEARING",
 type:"wall",
 condition:{itemIncludes:"load-bearing",valueEquals:"yes"},
-output:(m)=>`RCC walls (${getUniqueWalls(m)}) detected. No demolition or chiselling allowed. Wall panelling required for any electrical works`
+output:(m)=>`RCC walls (${getWallsFromRoom(m[0].Room)}) detected. No demolition or chiselling allowed. Wall panelling required for any electrical works`
 },
 
 {
 id:"DRY_WALL",
 type:"wall",
 condition:{itemIncludes:"dry wall",valueEquals:"yes"},
-output:(m)=>`Dry walls (${getUniqueWalls(m)}) detected. Bison board panelling or ply support required incase we are doing any carpentry work on the wall`
+output:(m)=>`Dry walls (${getWallsFromRoom(m[0].Room)}) detected. Bison board panelling or ply support required incase we are doing any carpentry work on the wall`
 },
 
 {
 id:"NICHES",
 type:"wall",
 condition:{itemIncludes:"niches",valueEquals:"yes"},
-output:(m)=>`Niches present on walls (${getUniqueWalls(m)}).Ply packing cost to be added in case of levelling/flushing.`
+output:(m)=>`Niches present on walls (${getWallsFromRoom(m[0].Room)}).Ply packing cost to be added in case of levelling/flushing.`
 },
 
 {
@@ -831,7 +859,9 @@ id:"STRUCTURAL_CRACK",
 type:"wall",
 condition:{itemIncludes:"major cracks",valueEquals:"yes"},
 output:(m)=>{
-let walls = getUniqueWalls(m);
+ 
+let room = m[0].Room
+let walls = getWallsFromRoom(room);
 return `Structural cracks observed on walls (${walls}). Need suitable treatment (under Cx Scope)`;
 }
 },
@@ -840,14 +870,14 @@ return `Structural cracks observed on walls (${walls}). Need suitable treatment 
 id:"HAIRLINE",
 type:"wall",
 condition:{itemIncludes:"hairline crack",valueEquals:"yes"},
-output:(m)=>`Hairline cracks/loose plaster observed on walls (${getUniqueWalls(m)}). Re-plastering required`
+output:(m)=>`Hairline cracks/loose plaster observed on walls (${getWallsFromRoom(m[0].Room)}). Re-plastering required`
 },
 
 {
 id:"SEEPAGE",
 type:"wall",
 condition:{itemIncludes:"seepage",valueEquals:"yes"},
-output:(m)=>`Seepage observed on walls (${getUniqueWalls(m)}). Waterproofing/Damproofing required before start of works(under Cx scope)`
+output:(m)=>`Seepage observed on walls (${getWallsFromRoom(m[0].Room)}). Waterproofing/Damproofing required before start of works(under Cx scope)`
 },
 
 {
@@ -860,13 +890,13 @@ output:()=> "AC point not available. Lowside works required to be done. Discuss 
 id:"AC_PELMET",
 type:"wall",
 condition:{itemIncludes:"panelling/pelmet",valueEquals:"yes"},
-output:(m)=>`AC pelmet/panelling required on walls (${getUniqueWalls(m)})`
+output:(m)=>`AC pelmet/panelling required on walls (${getWallsFromRoom(m[0].Room)})`
 },
 {
 id:"SWITCH_SOCKET_BAD",
 type:"wall",
 condition:{itemIncludes:"switches and sockets",valueEquals:"no"},
-output:(m)=>`Switches/sockets not in working condition on walls (${getUniqueWalls(m)}). Replacement and rewiring to be considered`
+output:(m)=>`Switches/sockets not in working condition on walls (${getWallsFromRoom(m[0].Room)}). Replacement and rewiring to be considered`
 },  
 {
 id:"SKIRTING_NOT_FLUSH",
@@ -896,7 +926,7 @@ output:()=> "Sufficient space not available to install additional window tracks.
 id:"DARK_SHADE",
 type:"wall",
 condition:{itemIncludes:"darker shade",valueEquals:"yes"},
-output:(m)=>`Dark shade on walls (${getUniqueWalls(m)}). Repainting not recommended with lighter shade.Fresh paint to be considered`
+output:(m)=>`Dark shade on walls (${getWallsFromRoom(m[0].Room)}). Repainting not recommended with lighter shade.Fresh paint to be considered`
 },
   
 
@@ -985,7 +1015,7 @@ return null;
 {
 id:"CLEAR_HEIGHT_ADV",
 type:"measurement",
-condition:{fields:["beamFloor","sprinklerFloor","fc1","fc2","fc3","fc4","fc5","doorsoffitNW","doorsoffitEW","doorsoffitSW","doorsoffitWW","winSoffitNW","winSoffitEW","winSoffitSW","winSoffitWW"]},
+condition:{fields:["beamFloor","sprinklerFloor","fc1","fc2","fc3","fc4","fc5"]},
 output:(v,m)=>{
 
 /* ---------------- BASE HEIGHTS ---------------- */
@@ -1037,15 +1067,22 @@ let maxDrop = effective - target;
  
 let minDrop = effective - permicible;
 
-if(maxDrop < 75){
-msgs.push( `Available depth only ${maxDrop} mm. False ceiling not recommended`);
+if(maxDrop <= 0){
+msgs.push(`No space available for false ceiling. Keep ceiling exposed or redesign services`);
+}
+else if(maxDrop < 75){
+msgs.push(`Available depth only ${maxDrop} mm. False ceiling not recommended`);
 }
 /* minimum drop (practical service gap) */
-if(permicible>2490){
- msgs.push( `Recommended false ceiling drop: ${minDrop} mm to ${maxDrop} mm`);
-}  // can adjust to 75–100
-if(permicible<2490){
-msgs.push( `Recommended false ceiling drop: 75 mm to ${maxDrop} mm`);
+if(maxDrop > 0){
+
+if(permicible > target){
+msgs.push(`Recommended false ceiling drop: ${minDrop} mm to ${maxDrop} mm`);
+}
+else{
+msgs.push(`Recommended false ceiling drop: 75 mm to ${maxDrop} mm`);
+}
+
 }
 
 
@@ -1059,10 +1096,7 @@ return msgs.join(" | ");
 {
 id:"AC_SOFFIT_FINAL",
 type:"measurement",
-condition:{fields:[
-"doorsoffitNW","doorsoffitEW","doorsoffitSW","doorsoffitWW",
-"winSoffitNW","winSoffitEW","winSoffitSW","winSoffitWW"
-]},
+condition:condition:{fields:[]},
 
 output:(v,m)=>{
 
@@ -1121,27 +1155,6 @@ return null;
 }
 },
 
-{
-id:"SOFFIT_AC",
-type:"measurement",
-condition:{fields:["doorsoffitNW","doorsoffitEW","doorsoffitSW","doorsoffitWW","winSoffitNW","winSoffitEW","winSoffitSW","winSoffitWW"]},
-output:(v,m)=>{
-let walls=[];
-
-[
-["NW",m.doorsoffitNW,m.winSoffitNW],
-["EW",m.doorsoffitEW,m.winSoffitEW],
-["SW",m.doorsoffitSW,m.winSoffitSW],
-["WW",m.doorsoffitWW,m.winSoffitWW]
-].forEach(([w,a,b])=>{
-if((a>0&&a<800)||(b>0&&b<800)) walls.push(w);
-});
-
-if(!walls.length) return null;
-
-return `AC space constraint on walls ${walls.join(", ")}. False ceiling pocket required`;
-}
-},
 
 {
 id:"WALL_UNDULATION",
