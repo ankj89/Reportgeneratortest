@@ -332,9 +332,7 @@ alert("Report deleted");
 }
 function getWallsFromRoom(matches){
 
-let walls = matches
-.map(x => x.Walls)
-.filter(w => w && w.trim() !== "")
+let walls = matches.map(x => x.Walls).filter(w => w && w.trim() !== "")
 
 /* 🔥 split if multiple like "E1,E2" */
 let expanded = walls.flatMap(w =>
@@ -844,21 +842,21 @@ output:()=> "Undulation observed on true ceiling. Flat false ceiling suggested. 
 id:"LOAD_BEARING",
 type:"wall",
 condition:{itemIncludes:"load-bearing",valueEquals:"yes"},
-output:(m)=>`RCC walls (${getWallsFromRoom(m[0].Room)}) detected. No demolition or chiselling allowed. Wall panelling required for any electrical works`
+output:(m)=>`RCC walls (${getWallsFromRoom(m)}) detected. No demolition or chiselling allowed. Wall panelling required for any electrical works`
 },
 
 {
 id:"DRY_WALL",
 type:"wall",
 condition:{itemIncludes:"dry wall",valueEquals:"yes"},
-output:(m)=>`Dry walls (${getWallsFromRoom(m[0].Room)}) detected. Bison board panelling or ply support required incase we are doing any carpentry work on the wall`
+output:(m)=>`Dry walls (${getWallsFromRoom(m)}) detected. Bison board panelling or ply support required incase we are doing any carpentry work on the wall`
 },
 
 {
 id:"NICHES",
 type:"wall",
 condition:{itemIncludes:"niches",valueEquals:"yes"},
-output:(m)=>`Niches present on walls (${getWallsFromRoom(m[0].Room)}).Ply packing cost to be added in case of levelling/flushing.`
+output:(m)=>`Niches present on walls (${getWallsFromRoom(m)}).Ply packing cost to be added in case of levelling/flushing.`
 },
 
 {
@@ -877,14 +875,14 @@ return `Structural cracks observed on walls (${walls}). Need suitable treatment 
 id:"HAIRLINE",
 type:"wall",
 condition:{itemIncludes:"hairline crack",valueEquals:"yes"},
-output:(m)=>`Hairline cracks/loose plaster observed on walls (${getWallsFromRoom(m[0].Room)}). Re-plastering required`
+output:(m)=>`Hairline cracks/loose plaster observed on walls (${getWallsFromRoom(m)}). Re-plastering required`
 },
 
 {
 id:"SEEPAGE",
 type:"wall",
 condition:{itemIncludes:"seepage",valueEquals:"yes"},
-output:(m)=>`Seepage observed on walls (${getWallsFromRoom(m[0].Room)}). Waterproofing/Damproofing required before start of works(under Cx scope)`
+output:(m)=>`Seepage observed on walls (${getWallsFromRoom(m)}). Waterproofing/Damproofing required before start of works(under Cx scope)`
 },
 
 {
@@ -897,13 +895,13 @@ output:()=> "AC point not available. Lowside works required to be done. Discuss 
 id:"AC_PELMET",
 type:"wall",
 condition:{itemIncludes:"panelling/pelmet",valueEquals:"yes"},
-output:(m)=>`AC pelmet/panelling required on walls (${getWallsFromRoom(m[0].Room)})`
+output:(m)=>`AC pelmet/panelling required on walls (${getWallsFromRoom(m)})`
 },
 {
 id:"SWITCH_SOCKET_BAD",
 type:"wall",
 condition:{itemIncludes:"switches and sockets",valueEquals:"no"},
-output:(m)=>`Switches/sockets not in working condition on walls (${getWallsFromRoom(m[0].Room)}). Replacement and rewiring to be considered`
+output:(m)=>`Switches/sockets not in working condition on walls (${getWallsFromRoom(m)}). Replacement and rewiring to be considered`
 },  
 {
 id:"SKIRTING_NOT_FLUSH",
@@ -933,7 +931,7 @@ output:()=> "Sufficient space not available to install additional window tracks.
 id:"DARK_SHADE",
 type:"wall",
 condition:{itemIncludes:"darker shade",valueEquals:"yes"},
-output:(m)=>`Dark shade on walls (${getWallsFromRoom(m[0].Room)}). Repainting not recommended with lighter shade.Fresh paint to be considered`
+output:(m)=>`Dark shade on walls (${getWallsFromRoom(m)}). Repainting not recommended with lighter shade.Fresh paint to be considered`
 },
   
 
