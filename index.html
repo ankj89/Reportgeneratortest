@@ -1021,6 +1021,7 @@ output:(v,m)=>{
 /* ---------------- BASE HEIGHTS ---------------- */
 
 let fcVals = [m.fc1,m.fc2,m.fc3,m.fc4,m.fc5].map(Number).filter(x=>x>0);
+ 
 if(!fcVals.length) return null;
 
 let fcMin = Math.min(...fcVals);
@@ -1053,6 +1054,7 @@ msgs.push(`Utilities cannot be concelaed in flat false ceiling as clear height w
 /* ---------------- EFFECTIVE HEIGHT ---------------- */
 
 /* take minimum of all valid */
+ 
 let validHeights = [fcMin, beam, sprinkler].filter(x=>x>0);
  let permHeights = [beam, sprinkler].filter(x=>x>0);
 let effective = Math.max(...validHeights);
@@ -1060,36 +1062,73 @@ let permicible = Math.max(...permHeights);
 /* ---------------- FALSE CEILING CALC ---------------- */
 
 /* target clear height = 8 ft = 2440 mm */
-let target = 2490;
+/* ---------------- TARGETS ---------------- */
 
-/* max drop allowed */
-let maxDrop = effective - target;
- 
-let minDrop = effective - permicible;
+let target8 = 2490
+let target9 = 2740
 
-if(maxDrop <= 0){
+/* ---------------- DROP CALC ---------------- */
+
+let maxDrop8 = effective - target8
+let minDrop8 = effective - permicible
+
+let maxDrop9 = effective - target9
+let minDrop9 = effective - permicible
+
+/* ---------------- DECISION ---------------- */
+/* ---------------- DECISION ---------------- */
+
+if(maxDrop8 <= 0){
 msgs.push(`No space available for false ceiling. Keep ceiling exposed or redesign services`);
 }
-else if(maxDrop < 75){
-msgs.push(`Available depth only ${maxDrop} mm. False ceiling not recommended`);
+else if(maxDrop8 < 75){
+msgs.push(`Available depth only ${Math.round(maxDrop8)} mm. False ceiling not recommended`);
 }
-/* minimum drop (practical service gap) */
-if(maxDrop > 0){
 
-if(permicible > target){
-msgs.push(`Recommended false ceiling drop: ${minDrop} mm to ${maxDrop} mm`);
+/* ---------------- RECOMMENDATION (8 FT) ---------------- */
+
+if(maxDrop8 > 0){
+
+if(permicible > target8){
+msgs.push(`Recommended false ceiling drop (8 ft): ${Math.round(minDrop8)} mm to ${Math.round(maxDrop8)} mm`);
 }
 else{
-msgs.push(`Recommended false ceiling drop: 75 mm to ${maxDrop} mm`);
+msgs.push(`Recommended false ceiling drop (8 ft): 75 mm to ${Math.round(maxDrop8)} mm`);
 }
 
 }
 
+/* ---------------- RECOMMENDATION (9 FT) ---------------- */
+
+if(maxDrop9 > 0){
+msgs.push(`Recommended false ceiling drop (9 ft): ${Math.round(minDrop9)} mm to ${Math.round(maxDrop9)} mm`);
+}
+
+/* ---------------- COST FLAG ---------------- */
+
+let costTrigger = Math.max(minDrop8, maxDrop8, minDrop9, maxDrop9)
+
+/* ---------------- BOXING LOGIC ---------------- */
+
+/* CASE 1: HEIGHT CONSTRAINT */
+if(lowHeightBeam){
+msgs.push(`Beam will require boxing (ply/gypsum) as it cannot be accommodated within false ceiling at <8 ft height`);
+}
+
+if(lowHeightSprinkler){
+msgs.push(`Sprinkler/utilities will require boxing or exposed integration as false ceiling clearance falls below 8 ft`);
+}
+
+/* CASE 2: DEEP DROP (>150 mm) */
+if(costTrigger > 150){
+
+msgs.push(`False ceiling drop exceeds 150 mm. Consider boxing for beam/services instead of full ceiling drop to optimize cost and height`);
+
+}
 
 /* ---------------- FINAL ---------------- */
 
-return msgs.join(" | ");
-
+return msgs.join(" | ")
 }
 },
 
@@ -1112,16 +1151,22 @@ elevs.forEach(e=>{
 
 let door = getWallValue(m.Room, e, "Door Soffit")
 let win  = getWallValue(m.Room, e, "Window Soffit")
+let doorVal = Number(door) || 0
+let winVal = Number(win) || 0
 
-let soffit = Math.max(door, win)
+let soffit = Math.max(doorVal, winVal)
 if(!soffit) return
 
-let available = soffit - 150
+let available = soffit - FC_DROP
+if(available <= 0){
+issues.push(`${e}: No space for AC after false ceiling → redesign required`)
+return
+}
 
 if(available >= 600) return
 
 let status = available >= 450
-? "Tight - pocket required"
+? "Tight space constraint - pocket maybe required"
 : "Not feasible - redesign required"
 
 issues.push(`${e}: ${Math.round(available)} mm → ${status}`)
@@ -1131,7 +1176,7 @@ if(!issues.length) return null
 
 let multi = issues.length >= 2
 
-return `AC clearance constraint: ${issues.join(" | ")}${multi ? ". Consider island ceiling" : ""}`
+return `AC wall space constraint on: ${issues.join(" | ")}${multi ? ". " : ""}`
 
 }
 },
