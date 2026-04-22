@@ -330,13 +330,20 @@ populateReportList();
 
 alert("Report deleted");
 }
-function getWallsFromRoom(room){
+function getWallsFromRoom(matches){
 
-let elevs = getElevations(room)
+let walls = matches
+.map(x => x.Walls)
+.filter(w => w && w.trim() !== "")
 
-if(!elevs.length) return ""
+/* 🔥 split if multiple like "E1,E2" */
+let expanded = walls.flatMap(w =>
+w.split(",").map(e => e.trim())
+)
 
-return elevs.join(", ")
+/* 🔥 unique */
+return [...new Set(expanded)].join(", ")
+
 
 }
  
@@ -1282,7 +1289,12 @@ norm(x.Value||"").includes(norm(rule.condition.valueEquals))
 let uniqueMap = new Map();
 
 matches.forEach(x=>{
-let key = (x.Walls || "").replace(/\s/g,""); // normalize
+let key = (x.Walls || "")
+.split(",")
+.map(w=>w.trim())
+.sort()
+.join(","); // normalize
+ 
 if(!uniqueMap.has(key)){
 uniqueMap.set(key, x);
 }
