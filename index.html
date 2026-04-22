@@ -117,7 +117,7 @@ cursor:pointer;
 Drop Excel file here or click to upload
 </div>
 
-<input type="file" id="fileInput" accept=".xlsx" style="display:none;" />
+
 <input type="file" id="fileInput" accept=".xlsx" />
 <br>
 <button id="generateBtn">Generate Report</button>
@@ -1035,20 +1035,29 @@ let msgs = [];
 
 /* FLOOR TO CEILING */
 msgs.push(`Floor to ceiling clear height: ${fcMin} mm`);
-
+let lowHeightBeam = false;
+let lowHeightSprinkler = false;
 /* BEAM */
 if(beam>0){
+
 msgs.push(`Offset beam present. Clear height at beam: ${beam} mm`);
+
+if(beam < 2490){
+lowHeightBeam = true;
+
+msgs.push(`Offset beam cannot be concealed in flat false ceiling as clear height will become <8ft. Peripheral False Ceiling suggested or keep beam exposed/boxed`);
 }
-if(beam-2490<0){
-msgs.push(`Offset beam cannot be concelaed in flat false ceiling as clear height will become <8ft. Periperal False Ceiling suggested or keep beam exposed/boxed`);
 }
 /* SPRINKLER / UTILITIES */
 if(sprinkler>0){
+
 msgs.push(`Utilities/sprinkler/HVAC line present. Clear height: ${sprinkler} mm`);
+
+if(sprinkler < 2490){
+lowHeightSprinkler = true;
+
+msgs.push(`Utilities cannot be concealed in flat false ceiling as clear height will become <8ft. Peripheral False Ceiling suggested`);
 }
-if(sprinkler-2490<0){
-msgs.push(`Utilities cannot be concelaed in flat false ceiling as clear height will become <8ft. Periperal False Ceiling suggested`);
 }
 /* SPRINKLER / UTILITIES */
 /* ---------------- EFFECTIVE HEIGHT ---------------- */
@@ -1100,30 +1109,35 @@ msgs.push(`Recommended false ceiling drop (8 ft): 75 mm to ${Math.round(maxDrop8
 
 /* ---------------- RECOMMENDATION (9 FT) ---------------- */
 
-if(maxDrop9 > 0){
+if(maxDrop9 <= 0){
+msgs.push(`9 ft clear height not achievable`);
+}
+else{
 msgs.push(`Recommended false ceiling drop (9 ft): ${Math.round(minDrop9)} mm to ${Math.round(maxDrop9)} mm`);
 }
 
 /* ---------------- COST FLAG ---------------- */
-
-let costTrigger = Math.max(minDrop8, maxDrop8, minDrop9, maxDrop9)
+let drops = [minDrop8, maxDrop8, minDrop9, maxDrop9].filter(x=>x>0)
+let costTrigger = drops.length ? Math.max(...drops) : 0
 
 /* ---------------- BOXING LOGIC ---------------- */
 
-/* CASE 1: HEIGHT CONSTRAINT */
+/* ---------------- BOXING LOGIC ---------------- */
+
+/* CASE 1: HEIGHT CONSTRAINT (8 ft OR 9 ft) */
+
 if(lowHeightBeam){
-msgs.push(`Beam will require boxing (ply/gypsum) as it cannot be accommodated within false ceiling at <8 ft height`);
+msgs.push(`Beam will require boxing (ply/gypsum) as it cannot be accommodated within false ceiling (8 ft / 9 ft scenarios)`);
 }
 
 if(lowHeightSprinkler){
-msgs.push(`Sprinkler/utilities will require boxing or exposed integration as false ceiling clearance falls below 8 ft`);
+msgs.push(`Sprinkler/utilities will require boxing or exposed integration as false ceiling clearance is insufficient (8 ft / 9 ft scenarios)`);
 }
 
-/* CASE 2: DEEP DROP (>150 mm) */
+/* CASE 2: DEEP DROP */
+
 if(costTrigger > 150){
-
 msgs.push(`False ceiling drop exceeds 150 mm. Consider boxing for beam/services instead of full ceiling drop to optimize cost and height`);
-
 }
 
 /* ---------------- FINAL ---------------- */
@@ -2065,7 +2079,9 @@ dropZone.ondrop = (e)=>{
 e.preventDefault()
 dropZone.style.background="#f8faff"
 
-fileInput.files = e.dataTransfer.files
+let dt = new DataTransfer()
+dt.items.add(e.dataTransfer.files[0])
+fileInput.files = dt.files
 processFile()
 }
 
