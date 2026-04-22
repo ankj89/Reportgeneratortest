@@ -149,6 +149,7 @@ var measData = [];
 var matrixDataRaw = [];
 var projectDataRaw = {};
 var societyData = [];
+ var wallMeasData = [];
 let currentReportId = null;
 function norm(str){return (str||"").toLowerCase().replace(/[^a-z0-9]/g,"");}
 function getAllReports(){
@@ -178,29 +179,7 @@ return `${pid}_${cx} (${ts})`;
 
 }
 
-function getElevationMap(m){
 
-let elevs = (m.elevations || "")
-.split(",")
-.map(e=>e.trim())
-.filter(Boolean)
-
-if(elevs.length === 4){
-return {
-NW: elevs[0],
-EW: elevs[1],
-SW: elevs[2],
-WW: elevs[3]
-}
-}
-
-return {
-NW:"NW",
-EW:"EW",
-SW:"SW",
-WW:"WW"
-}
-}
  
  
 function saveCurrentReport(){
@@ -223,104 +202,9 @@ localStorage.setItem("validationReports", JSON.stringify(allReports));
 populateReportList();
 }
  
-function getUniqueWalls(matches){
 
-let wallSet = new Set();
 
-matches.forEach(x=>{
 
-if(!x.Walls) return;
-
-/* split multiple */
-x.Walls.split(",").forEach(w=>{
-
-let clean = w.trim().toUpperCase();
-
-if(["NW","EW","SW","WW"].includes(clean)){
-wallSet.add(clean);
-}
-
-});
-
-});
-
-/* order */
-const order = ["NW","EW","SW","WW"];
-
-return Array.from(wallSet)
-.sort((a,b)=>order.indexOf(a)-order.indexOf(b))
-.join(", ");
-
-}
-
-function analyzeWall(w, m){
-
-let map = getElevationMap(m)
-let wallName = map[w] || w
-
-let issues = []
-
-/* ---------------- SELECT CORRECT WALL PAIR ---------------- */
-
-let wp = (w === "NW" || w === "SW")
-  ? [m.wp1_c1, m.wp1_mid, m.wp1_c2]
-  : [m.wp2_c1, m.wp2_mid, m.wp2_c2]
-
-wp = wp.map(Number).filter(x=>x)
-
-if(wp.length !== 3) return issues
-
-/* ---------------- EXPECTED BASELINE ---------------- */
-
-let expected = (wp[0] + wp[1] + wp[2]) / 3
-
-/* ---------------- WALL SAMPLE POINTS ---------------- */
-
-let M = Number(m[`${w}_M`])
-let U = Number(m[`${w}_U`])
-
-let devM = M ? Math.abs(M - expected) : 0
-let devU = U ? Math.abs(U - expected) : 0
-
-let wallDev = Math.max(devM, devU)
-
-/* ---------------- SURFACE / PLANE DEVIATION ---------------- */
-
-let action = getTreatment(wallDev)
-
-if(action){
-issues.push({
-type: "Wall surface deviation",
-deviation: Math.round(wallDev),
-action
-})
-}
-
-/* ---------------- PLAN TILT (ORTHOGONALITY DRIVER) ---------------- */
-
-let c1 = wp[0]
-let c2 = wp[2]
-
-let tilt = Math.abs(c1 - c2)
-let tiltAction = getTreatment(tilt)
-
-if(tiltAction){
-
-let problemWall = (c1 > c2)
-  ? (w === "NW" || w === "SW" ? "NW" : "EW")
-  : (w === "NW" || w === "SW" ? "SW" : "WW")
-
-if(problemWall === w){
-issues.push({
-type: "Wall tilt (non-parallel)",
-deviation: Math.round(tilt),
-action: tiltAction
-})
-}
-}
-
-return issues
-}
 
 
  
@@ -1021,42 +905,64 @@ output:(m)=>`Dark shade on walls (${getUniqueWalls(m)}). Repainting not recommen
 {
 id:"WALL_ENGINE_FINAL",
 type:"measurement",
-condition:{fields:[
-"wp1_c1","wp1_mid","wp1_c2",
-"wp2_c1","wp2_mid","wp2_c2",
-"NW_M","EW_M","SW_M","WW_M",
-"NW_U","EW_U","SW_U","WW_U"
-]},
 
 output:(v,m)=>{
 
-let walls = ["NW","EW","SW","WW"]
-let allIssues = []
+let elevs = getElevations(m.Room)
 
-walls.forEach(w=>{
-let res = analyzeWall(w, m)
-if(res.length){
-allIssues.push({wall:w, issues:res})
+if(elevs.length < 2) return null
+
+let issues = []
+
+/* ---------------- WALL LEVEL CHECK ---------------- */
+
+elevs.forEach(e=>{
+
+let center = getWallValue(m.Room, e, "Center")
+let upper  = getWallValue(m.Room, e, "Upper")
+
+if(!center && !upper) return
+
+let dev = Math.abs((upper || center) - center)
+
+let action = getTreatment(dev)
+
+if(action){
+issues.push(`${e}: ${dev} mm → ${action}`)
 }
+
 })
 
-let summary = getRoomOrthoSummary(m)
+/* ---------------- ORTHOGONAL CHECK ---------------- */
 
-/* 🔥 IMPORTANT: Even if orthogonal → still show wall issues */
+if(elevs.length >= 4){
 
-if(!allIssues.length && !summary) return null
+let pair1 = [elevs[0], elevs[2]]
+let pair2 = [elevs[1], elevs[3]]
 
-let detail = allIssues.map(w=>{
+let getAvg = (pair)=>{
+let vals = pair.map(e => getWallValue(m.Room, e, "Center")).filter(x=>x)
+if(!vals.length) return 0
+return vals.reduce((a,b)=>a+b,0)/vals.length
+}
 
-let parts = w.issues.map(i=>
-`${i.type}: ${i.deviation} mm → ${i.action}`
-)
+let avg1 = getAvg(pair1)
+let avg2 = getAvg(pair2)
 
-let map = getElevationMap(m)
-return `${map[w.wall] || w.wall}: ${parts.join(", ")}`
-}).join(" | ")
+let skew = Math.abs(avg1 - avg2)
 
-return [summary, detail].filter(Boolean).join(". ")
+if(skew > 5){
+let action = getTreatment(skew)
+if(action){
+issues.push(`Room skew: ${skew} mm → ${action}`)
+}
+}
+
+}
+
+if(!issues.length) return null
+
+return issues.join(" | ")
 
 }
 },
@@ -1165,38 +1071,28 @@ const FC_DROP = 150
 
 let issues = []
 
-;[
-["NW", m.doorsoffitNW, m.winSoffitNW],
-["EW", m.doorsoffitEW, m.winSoffitEW],
-["SW", m.doorsoffitSW, m.winSoffitSW],
-["WW", m.doorsoffitWW, m.winSoffitWW]
-].forEach(([w, d, wS])=>{
+;let elevs = getElevations(m.Room)
+if(!elevs.length) return null
 
-let door = Number(d) || 0
-let win = Number(wS) || 0
+elevs.forEach(e=>{
+
+let door = getWallValue(m.Room, e, "Door Soffit")
+let win  = getWallValue(m.Room, e, "Window Soffit")
 
 let soffit = Math.max(door, win)
-
 if(!soffit) return
 
-let available = soffit - FC_DROP
+let available = soffit - 150
 
-if(available >= AC_REQUIRED){
-return
-}
+if(available >= 600) return
 
-let status = ""
+let status = available >= 450
+? "Tight - pocket required"
+: "Not feasible - redesign required"
 
-if(available >= 450){
-status = "Tight - pocket recommended"
-}else{
-status = "Not feasible - redesign required"
-}
-let map = getElevationMap(m)
-issues.push(`${map[w] || w}: ${Math.round(available)} mm → ${status}`)
+issues.push(`${e}: ${Math.round(available)} mm → ${status}`)
 
 })
-
 if(!issues.length) return null
 
 let multi = issues.length >= 2
@@ -1250,29 +1146,45 @@ return `AC space constraint on walls ${walls.join(", ")}. False ceiling pocket r
 {
 id:"WALL_UNDULATION",
 type:"measurement",
-condition:{fields:["undNW","undEW","undSW","undWW"]},
+
 output:(v,m)=>{
-let msgs=[];
 
-[
-["NW",m.undNW],
-["EW",m.undEW],
-["SW",m.undSW],
-["WW",m.undWW]
-].forEach(([w,val])=>{
-let x=Number(val)||0;
+/* ---------------- GET ELEVATIONS ---------------- */
+let elevs = getElevations(m.Room)
 
-if(x>5 && x<=20){
- let map = getElevationMap(m)
-msgs.push(`${map[w] || w}: Undulation 5–20mm. Punning required`);
+/* 🔒 NO WALL DATA → SKIP */
+if(!elevs.length) return null
+
+let msgs = []
+
+/* ---------------- PROCESS EACH WALL ---------------- */
+elevs.forEach(e=>{
+
+let center = getWallValue(m.Room, e, "Center")
+let upper  = getWallValue(m.Room, e, "Upper")
+
+/* if no data → skip */
+if(!center && !upper) return
+
+/* take worst case deviation */
+let dev = Math.abs((upper || center) - center)
+
+/* ---------------- APPLY RULE ---------------- */
+if(dev > 5 && dev <= 20){
+msgs.push(`${e}: Undulation ${Math.round(dev)} mm → POP punning required`)
 }
-else if(x>20){
- let map = getElevationMap(m)
-msgs.push(`${map[w] || w}: Undulation >20mm. Plastering required`);                 
+else if(dev > 20 && dev <= 30){
+msgs.push(`${e}: Undulation ${Math.round(dev)} mm → Plastering + punning required`)
 }
-});
+else if(dev > 30){
+msgs.push(`${e}: Undulation ${Math.round(dev)} mm → Wall panelling required`)
+}
 
-return msgs.length ? msgs.join(" | ") : null;
+})
+
+/* ---------------- FINAL OUTPUT ---------------- */
+return msgs.length ? msgs.join(" | ") : null
+
 }
 }
 
@@ -1511,17 +1423,24 @@ function downloadPDF(){
 let rooms = [...new Set(matrixDataRaw.map(x=>x.Room).filter(Boolean))]
 
 /* ---------------- FIX ELEVATION ---------------- */
-function getElevationMap(m){
-let elevs = (m.elevations || "")
-.split(",")
-.map(e=>e.trim())
-.filter(Boolean)
+function getElevations(room){
 
-if(elevs.length === 4){
-return {NW:elevs[0],EW:elevs[1],SW:elevs[2],WW:elevs[3]}
+let rows = wallMeasData.filter(r => r.Room === room)
+
+return [...new Set(rows.map(r => r.Elevation))]
+
 }
 
-return {NW:"NW",EW:"EW",SW:"SW",WW:"WW"}
+function getWallValue(room, elevation, type){
+
+return Number(
+wallMeasData.find(r =>
+r.Room === room &&
+r.Elevation === elevation &&
+r.Parameter === type
+)?.Value
+) || 0
+
 }
 
 /* ---------------- RUN RULE ENGINE ---------------- */
@@ -1792,7 +1711,8 @@ reader.onload=function(e){
 let wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
 
 matrixDataRaw=XLSX.utils.sheet_to_json(wb.Sheets["Validation Data"]||{});
-measData=XLSX.utils.sheet_to_json(wb.Sheets["Measurements"]||{});
+measData = XLSX.utils.sheet_to_json(wb.Sheets["Room Measurements"] || {});
+wallMeasData = XLSX.utils.sheet_to_json(wb.Sheets["Wall Measurements"] || []);
 societyData=XLSX.utils.sheet_to_json(wb.Sheets["Society Constraints"]||{});
 
 let rooms=getUnique(matrixDataRaw,"Room");
