@@ -1488,32 +1488,41 @@ if(maxDev > 5) return "Room slightly skewed (5–20 mm)"
 return ""
 }
 
+/* ---------------- FIX ELEVATION ---------------- */
+function getElevations(room){
 
+if(!wallMeasData || !wallMeasData.length) return []
+
+let rows = wallMeasData.filter(r => r.Room === room)
+
+/* fallback if no elevation column */
+if(!rows.length) return []
+
+return [...new Set(
+rows
+.map(r => r.Elevation)
+.filter(e => e && e !== "undefined")
+)]
+
+}
+ function getWallValue(room, elevation, type){
+
+if(!wallMeasData || !wallMeasData.length) return 0
+
+let rec = wallMeasData.find(r =>
+r.Room === room &&
+r.Elevation === elevation &&
+r.Parameter === type
+)
+
+return Number(rec?.Value) || 0
+
+}
  
 function downloadPDF(){
 
 let rooms = [...new Set(matrixDataRaw.map(x=>x.Room).filter(Boolean))]
 
-/* ---------------- FIX ELEVATION ---------------- */
-function getElevations(room){
-
-let rows = wallMeasData.filter(r => r.Room === room)
-
-return [...new Set(rows.map(r => r.Elevation))]
-
-}
-
-function getWallValue(room, elevation, type){
-
-return Number(
-wallMeasData.find(r =>
-r.Room === room &&
-r.Elevation === elevation &&
-r.Parameter === type
-)?.Value
-) || 0
-
-}
 
 /* ---------------- RUN RULE ENGINE ---------------- */
 
