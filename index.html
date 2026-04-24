@@ -1543,48 +1543,50 @@ return Number(rec?.Value) || 0
  
 function downloadPDF(){
 
+/* ---------------- CLEAN ROOMS ---------------- */
 let rooms = [...new Set(
 matrixDataRaw
-.map(x => x.Room)
-.filter(r => typeof r === "string" && r.trim() !== "")
+.map(x => (x.Room || "").toString().trim())
+.filter(r => r && r !== "undefined" && r !== "null")
 )]
 
+/* HARD SANITY */
+rooms = rooms.filter(r => typeof r === "string" && r.trim() !== "")
 
 /* ---------------- RUN RULE ENGINE ---------------- */
-
 let autoInsights = runRuleEngine(rooms)
 
+/* ---------------- BUILD INSIGHT MAP ---------------- */
 let roomInsights = {}
 let societyInsights = []
 
 rooms.forEach(r=>{
-    if(typeof r === "string"){
-        roomInsights[r] = []
-    }
+roomInsights[r.trim()] = []
 })
 
 autoInsights.forEach(i=>{
 if(i.room === "All"){
-    societyInsights.push(i.text)
+societyInsights.push(i.text)
 }else{
-    if(!roomInsights[i.room.trim()]){
-        roomInsights[i.room.trim()] = []
-    }
-    roomInsights[i.room.trim()].push(i.text)
+let key = (i.room || "").toString().trim()
+
+if(!roomInsights[key]){
+roomInsights[key] = []
+}
+
+roomInsights[key].push(i.text)
 }
 })
 
 /* ---------------- PROJECT DETAILS ---------------- */
-
 let project = {}
 matrixDataRaw.forEach(r=>{
 if(!r.Room && r.Item && r.Value){
-project[r.Item]=r.Value
+project[r.Item] = r.Value
 }
 })
 
-/* ---------------- BUILD CONTENT ---------------- */
-
+/* ---------------- BUILD HTML ---------------- */
 let content = ""
 
 /* INDEX */
@@ -1613,7 +1615,6 @@ content += `<p><b>${k}:</b> ${project[k]}</p>`
 content += `</div>`
 
 /* ---------------- INSIGHTS ---------------- */
-
 content += `<div class="section"><h2>INSIGHTS</h2>`
 
 /* SOCIETY */
@@ -1623,6 +1624,7 @@ content += `<h3>Society</h3>
 
 societyInsights.forEach((txt,i)=>{
 let meta = classifyInsight(txt)
+
 content += `<tr>
 <td>${i+1}</td>
 <td>${txt}</td>
@@ -1635,14 +1637,20 @@ content += `<tr>
 content += `</table>`
 
 /* ROOM WISE */
-rooms.forEach((rm, index)=>{
- if(typeof rm !== "string") return;
-content += `<h3>${rm}</h3>
+rooms.forEach((roomName, index)=>{
+
+let key = roomName.trim()
+if(!key) return
+
+content += `<h3>${key}</h3>
 <table>
 <tr><th>SNo</th><th>Insight</th><th>Type</th><th>Category</th><th>Remarks</th></tr>`
 
-(Array.isArray(roomInsights[rm]) ? roomInsights[rm] : []).forEach((txt,i)=>{
+let arr = Array.isArray(roomInsights[key]) ? roomInsights[key] : []
+
+arr.forEach((txt,i)=>{
 let meta = classifyInsight(txt)
+
 content += `<tr>
 <td>${i+1}</td>
 <td>${txt}</td>
@@ -1658,17 +1666,15 @@ content += `</table>`
 content += `</div>`
 
 /* ---------------- SOCIETY DETAILS ---------------- */
-
 content += `<div class="section"><h2>SOCIETY DETAILS</h2>`
 
 societyData.forEach(s=>{
-content += `<p><b>${s.Question}:</b> ${s.Value||""}</p>`
+content += `<p><b>${s.Question}:</b> ${s.Value || ""}</p>`
 })
 
 content += `</div>`
 
 /* ---------------- ROOM MATRIX ---------------- */
-
 content += `<div class="section"><h2>ROOM MATRIX</h2><table>
 <tr><th>Question</th>${rooms.map(r=>`<th>${r}</th>`).join("")}</tr>`
 
@@ -1678,8 +1684,14 @@ roomQs.forEach(q=>{
 content += `<tr><td>${q}</td>`
 
 rooms.forEach(r=>{
-let rec = matrixDataRaw.find(x=>x.Room===r && x.Item===q && x.Section==="Room")||{}
-content += `<td>${rec.Value||""}<br><span style="font-size:10px">${rec.Comment||""}</span></td>`
+let rec = matrixDataRaw.find(x =>
+(x.Room || "").toString().trim() === r &&
+x.Item === q &&
+x.Section === "Room"
+) || {}
+
+content += `<td>${rec.Value || ""}<br>
+<span style="font-size:10px">${rec.Comment || ""}</span></td>`
 })
 
 content += `</tr>`
@@ -1688,7 +1700,6 @@ content += `</tr>`
 content += `</table></div>`
 
 /* ---------------- WALL MATRIX ---------------- */
-
 content += `<div class="section"><h2>WALL MATRIX</h2><table>
 <tr><th>Question</th>${rooms.map(r=>`<th>${r}</th>`).join("")}</tr>`
 
@@ -1698,9 +1709,14 @@ wallQs.forEach(q=>{
 content += `<tr><td>${q}</td>`
 
 rooms.forEach(r=>{
-let rec = matrixDataRaw.find(x=>x.Room===r && x.Item===q && x.Section==="Wall")||{}
-content += `<td>${rec.Value||""} ${rec.Walls?`(${rec.Walls})`:""}
-<br><span style="font-size:10px">${rec.Comment||""}</span></td>`
+let rec = matrixDataRaw.find(x =>
+(x.Room || "").toString().trim() === r &&
+x.Item === q &&
+x.Section === "Wall"
+) || {}
+
+content += `<td>${rec.Value || ""} ${rec.Walls ? `(${rec.Walls})` : ""}
+<br><span style="font-size:10px">${rec.Comment || ""}</span></td>`
 })
 
 content += `</tr>`
@@ -1709,12 +1725,11 @@ content += `</tr>`
 content += `</table></div>`
 
 /* ---------------- MEASUREMENTS ---------------- */
-
 content += `<div class="section"><h2>MEASUREMENTS</h2><table>
 <tr><th>Room</th><th>Details</th></tr>`
 
 measData.forEach(m=>{
-content += `<tr><td>${m.Room||""}</td><td>
+content += `<tr><td>${m.Room || ""}</td><td>
 ${Object.entries(m)
 .filter(([k,v])=>k!=="Room" && v)
 .map(([k,v])=>`<b>${k}:</b> ${v}`)
@@ -1725,7 +1740,6 @@ ${Object.entries(m)
 content += `</table></div>`
 
 /* ---------------- STYLE ---------------- */
-
 let style = `
 <style>
 body{font-family:Arial;font-size:11px;border:2px solid #000;padding:10px}
@@ -1737,12 +1751,18 @@ th,td{border:1px solid #000;padding:5px;font-size:10px}
 `
 
 /* ---------------- PRINT ---------------- */
-
 let win = window.open("")
+
+if(!win){
+alert("Popup blocked. Please allow popups.")
+return
+}
+
 win.document.write(`<html><head>${style}</head><body>${content}</body></html>`)
 win.document.close()
 
 setTimeout(()=>win.print(),500)
+
 }
  
 /* 🔷 HELPER */
