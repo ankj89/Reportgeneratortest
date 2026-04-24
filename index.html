@@ -1614,10 +1614,10 @@ ${date}
 <table>
 <tr><th>Section</th></tr>
 <tr><td>Validation Summary & Project Details</td></tr>
-<tr><td>Insights</td></tr>
-<tr><td>Society</td></tr>
-<tr><td>Room & Wall Matrix</td></tr>
-<tr><td>Measurements</td></tr>
+<tr><td>Insights(Design,Cost,Execution)</td></tr>
+<tr><td>Society & Work Environment Constraints</td></tr>
+<tr><td>Room & Wall Validation Summary</td></tr>
+<tr><td>Key Measurements</td></tr>
 </table>
 </div>
 
@@ -1678,10 +1678,10 @@ content += `<p><b>${k}:</b> ${val}</p>`
 content += `</div></div>`
 
 /* ---------------- INSIGHTS ---------------- */
-content += `<div class="section"><h2>INSIGHTS</h2>`
+content += `<div class="section"><h2>Insights(Design,Cost,Execution)</h2>`
 
 /* SOCIETY */
-content += `<h3>Society</h3>
+content += `<h3>Society & Work Environment</h3>
 <table>
 <tr><th>SNo</th><th>Insight</th><th>Type</th><th>Category</th><th>Remarks</th></tr>`
 
@@ -1729,7 +1729,7 @@ content += `</table>`
 content += `</div>`
 
 /* ---------------- SOCIETY DETAILS ---------------- */
-content += `<div class="section"><h2>SOCIETY DETAILS</h2>`
+content += `<div class="section"><h2>SOCIETY & WORK ENVIRONMENT CONSTRAINTS</h2>`
 
 societyData.forEach(s=>{
 content += `<p><b>${s.Question}:</b> ${s.Value || ""}</p>`
@@ -1738,7 +1738,7 @@ content += `<p><b>${s.Question}:</b> ${s.Value || ""}</p>`
 content += `</div>`
 
 /* ---------------- ROOM MATRIX ---------------- */
-content += `<div class="section"><h2>ROOM MATRIX</h2><table>
+content += `<div class="section"><h2>ROOM VALIDATION MATRIX</h2><table>
 <tr><th>Question</th>${rooms.map(r=>`<th>${r}</th>`).join("")}</tr>`
 
 let roomQs = [...new Set(matrixDataRaw.filter(x=>x.Section==="Room").map(x=>x.Item))]
@@ -1763,7 +1763,7 @@ content += `</tr>`
 content += `</table></div>`
 
 /* ---------------- WALL MATRIX ---------------- */
-content += `<div class="section"><h2>WALL MATRIX</h2><table>
+content += `<div class="section"><h2>WALL VALIDATION MATRIX</h2><table>
 <tr><th>Question</th>${rooms.map(r=>`<th>${r}</th>`).join("")}</tr>`
 
 let wallQs = [...new Set(matrixDataRaw.filter(x=>x.Section==="Wall").map(x=>x.Item))]
@@ -1788,7 +1788,7 @@ content += `</tr>`
 content += `</table></div>`
 
 /* ---------------- MEASUREMENTS ---------------- */
-content += `<div class="section"><h2>MEASUREMENTS</h2><table>
+content += `<div class="section"><h2>KEY MEASUREMENTS</h2><table>
 <tr><th>Room</th><th>Details</th></tr>`
 
 measData.forEach(m=>{
