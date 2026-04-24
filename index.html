@@ -1278,6 +1278,7 @@ RULES.forEach(rule=>{
 
 if(rule.type==="wall"||rule.type==="room"){
 rooms.forEach((rm, index)=>{
+ if(typeof rm !== "string") return;
 let matches = matrixDataRaw.filter(x=>
 x.Room===rm &&
 norm(x.Item).includes(norm(rule.condition.itemIncludes)) &&
@@ -1542,7 +1543,11 @@ return Number(rec?.Value) || 0
  
 function downloadPDF(){
 
-let rooms = [...new Set(matrixDataRaw.map(x=>x.Room).filter(Boolean))]
+let rooms = [...new Set(
+matrixDataRaw
+.map(x => x.Room)
+.filter(r => typeof r === "string" && r.trim() !== "")
+)]
 
 
 /* ---------------- RUN RULE ENGINE ---------------- */
@@ -1552,7 +1557,11 @@ let autoInsights = runRuleEngine(rooms)
 let roomInsights = {}
 let societyInsights = []
 
-rooms.forEach(r=>roomInsights[r]=[])
+rooms.forEach(r=>{
+    if(typeof r === "string"){
+        roomInsights[r] = []
+    }
+})
 
 autoInsights.forEach(i=>{
 if(i.room==="All") societyInsights.push(i.text)
@@ -1621,6 +1630,7 @@ content += `</table>`
 
 /* ROOM WISE */
 rooms.forEach((rm, index)=>{
+ if(typeof rm !== "string") return;
 content += `<h3>${rm}</h3>
 <table>
 <tr><th>SNo</th><th>Insight</th><th>Type</th><th>Category</th><th>Remarks</th></tr>`
@@ -2061,6 +2071,7 @@ html += createInsightTable("Society Insights", societyInsights, "societyTable");
 
 /* ROOMS */
 rooms.forEach((rm, index)=>{
+ if(typeof rm !== "string") return;
 
 html += `
 <div class="collapsible-header" onclick="toggleSection(this)">
