@@ -1279,7 +1279,7 @@ RULES.forEach(rule=>{
 if(rule.type==="wall"||rule.type==="room"){
 rooms.forEach((rm, index)=>{
 let matches = matrixDataRaw.filter(x=>
-x.Room===room &&
+x.Room===rm &&
 norm(x.Item).includes(norm(rule.condition.itemIncludes)) &&
 (
 !rule.condition.valueEquals ||
@@ -1305,7 +1305,7 @@ uniqueMap.set(key, x);
 matches = Array.from(uniqueMap.values());
 if(matches.length){
 let res=rule.output(matches);
-if(res) insights.push({room,text:res});
+if(res) insights.push({room: rm, text: res});
 }
 });
 }
@@ -1625,7 +1625,7 @@ content += `<h3>${rm}</h3>
 <table>
 <tr><th>SNo</th><th>Insight</th><th>Type</th><th>Category</th><th>Remarks</th></tr>`
 
-(roomInsights[room]||[]).forEach((txt,i)=>{
+(roomInsights[rm]||[]).forEach((txt,i)=>{
 let meta = classifyInsight(txt)
 content += `<tr>
 <td>${i+1}</td>
@@ -2064,10 +2064,10 @@ rooms.forEach((rm, index)=>{
 
 html += `
 <div class="collapsible-header" onclick="toggleSection(this)">
-${room} Insights
+${rm} Insights
 </div>
 <div class="collapsible-content">
-${createInsightTable("", roomInsights[room], `roomTable_${index}`)}
+${createInsightTable("", roomInsights[rm], `roomTable_${index}`)}
 </div>
 `
 
