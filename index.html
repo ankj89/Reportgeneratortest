@@ -1584,8 +1584,11 @@ let project = matrixDataRaw[0] || {}
  
 
 /* ---------------- COVER PAGE (NEW) ---------------- */
-let pid = (project["PID"] || project["Pid"] || "").toString().trim()
-let cx  = (project["Cx Name"] || project["Cx"] || "").toString().trim()
+let pid = Object.keys(project).find(k=>k.toLowerCase().includes("pid"))
+let cx  = Object.keys(project).find(k=>k.toLowerCase().includes("cx"))
+
+pid = pid ? project[pid] : ""
+cx  = cx  ? project[cx]  : ""
 let date = new Date().toLocaleDateString()
 
 content += `
@@ -1622,8 +1625,48 @@ ${date}
 `
 
 /* ---------------- SUMMARY (FIXED) ---------------- */
-content += `<div class="section">
-<h2>VALIDATION SUMMARY & PROJECT DETAILS</h2>`
+/* ---------------- SUMMARY (FIXED + VALIDATION ADDED) ---------------- */
+
+let startTime = ""
+let endTime = ""
+let duration = ""
+
+/* FETCH FROM MEASUREMENT */
+if(measData.length){
+startTime = measData[0].Validation_Start || ""
+endTime = measData[0].Validation_End || ""
+}
+
+let start = parseCustomDate(startTime)
+let end = parseCustomDate(endTime)
+
+if(start && end){
+let diff = end - start
+duration = Math.floor(diff / 60000) + " mins"
+}
+
+content += `<div class="section" style="display:flex; gap:20px">
+
+<!-- LEFT -->
+<div style="width:50%">
+<h2>VALIDATION SUMMARY</h2>
+
+<p><b>Validator Name:</b> </p>
+<p><b>Validator Email:</b> </p>
+<p><b>ID Name:</b> </p>
+<p><b>ID Email:</b> </p>
+<p><b>BMD Name:</b> </p>
+<p><b>BMD Email:</b> </p>
+
+<p><b>Start Time:</b> ${startTime}</p>
+<p><b>End Time:</b> ${endTime}</p>
+<p><b>Total Time:</b> ${duration}</p>
+</div>
+
+<!-- RIGHT -->
+<div style="width:50%">
+<h2>PROJECT DETAILS</h2>
+`
 
 Object.keys(project).forEach(k=>{
 if(["Room","Section","Item","Value","Walls"].includes(k)) return;
@@ -1632,7 +1675,7 @@ let val = project[k] || ""
 content += `<p><b>${k}:</b> ${val}</p>`
 })
 
-content += `</div>`
+content += `</div></div>`
 
 /* ---------------- INSIGHTS ---------------- */
 content += `<div class="section"><h2>INSIGHTS</h2>`
@@ -1711,7 +1754,7 @@ x.Section === "Room"
 ) || {}
 
 content += `<td>${rec.Value || ""}<br>
-<span style="font-size:10px">${rec.Comment || ""}</span></td>`
+<span style="font-size:10px">${rec.Comment || rec.Remark || rec.Comments || ""}</span></td>`
 })
 
 content += `</tr>`
@@ -1736,7 +1779,7 @@ x.Section === "Wall"
 ) || {}
 
 content += `<td>${rec.Value || ""} ${rec.Walls ? `(${rec.Walls})` : ""}
-<br><span style="font-size:10px">${rec.Comment || ""}</span></td>`
+<br><span style="font-size:10px">${rec.Comment || rec.Remark || rec.Comments || ""}</span></td>`
 })
 
 content += `</tr>`
