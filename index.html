@@ -1592,7 +1592,7 @@ cx  = cx  ? project[cx]  : ""
 let date = new Date().toLocaleDateString()
 
 content += `
-<div class="section" style="display:flex;flex-direction:column;height:100vh;justify-content:space-between;align-items:center;text-align:center;">
+<div class="section page" style="display:flex;flex-direction:column;min-height:100vh;justify-content:space-between;align-items:center;text-align:center;">
 
 <div style="margin-top:40px;">
 <h1 style="font-size:26px;letter-spacing:2px;margin-bottom:20px;">
@@ -1645,7 +1645,7 @@ let diff = end - start
 duration = Math.floor(diff / 60000) + " mins"
 }
 
-content += `<div class="section" style="display:flex; gap:20px">
+content += `<div class="section page" style="display:flex; gap:20px">
 
 <!-- LEFT -->
 <div style="width:50%">
@@ -1678,7 +1678,7 @@ content += `<p><b>${k}:</b> ${val}</p>`
 content += `</div></div>`
 
 /* ---------------- INSIGHTS ---------------- */
-content += `<div class="section"><h2>Insights(Design,Cost,Execution)</h2>`
+content += `<div class="section page"><h2>Insights(Design,Cost,Execution)</h2>`
 
 /* SOCIETY */
 content += `<h3>Society & Work Environment</h3>
@@ -1729,7 +1729,7 @@ content += `</table>`
 content += `</div>`
 
 /* ---------------- SOCIETY DETAILS ---------------- */
-content += `<div class="section"><h2>SOCIETY & WORK ENVIRONMENT CONSTRAINTS</h2>`
+content += `<div class="section page"><h2>SOCIETY & WORK ENVIRONMENT CONSTRAINTS</h2>`
 
 societyData.forEach(s=>{
 content += `<p><b>${s.Question}:</b> ${s.Value || ""}</p>`
@@ -1738,7 +1738,7 @@ content += `<p><b>${s.Question}:</b> ${s.Value || ""}</p>`
 content += `</div>`
 
 /* ---------------- ROOM MATRIX ---------------- */
-content += `<div class="section"><h2>ROOM VALIDATION MATRIX</h2><table>
+content += `<div class="section page"><h2>ROOM VALIDATION MATRIX</h2><table>
 <tr><th>Question</th>${rooms.map(r=>`<th>${r}</th>`).join("")}</tr>`
 
 let roomQs = [...new Set(matrixDataRaw.filter(x=>x.Section==="Room").map(x=>x.Item))]
@@ -1763,7 +1763,7 @@ content += `</tr>`
 content += `</table></div>`
 
 /* ---------------- WALL MATRIX ---------------- */
-content += `<div class="section"><h2>WALL VALIDATION MATRIX</h2><table>
+content += `<div class="section page"><h2>WALL VALIDATION MATRIX</h2><table>
 <tr><th>Question</th>${rooms.map(r=>`<th>${r}</th>`).join("")}</tr>`
 
 let wallQs = [...new Set(matrixDataRaw.filter(x=>x.Section==="Wall").map(x=>x.Item))]
@@ -1788,7 +1788,7 @@ content += `</tr>`
 content += `</table></div>`
 
 /* ---------------- MEASUREMENTS ---------------- */
-content += `<div class="section"><h2>KEY MEASUREMENTS</h2><table>
+content += `<div class="section page"><h2>KEY MEASUREMENTS</h2><table>
 <tr><th>Room</th><th>Details</th></tr>`
 
 measData.forEach(m=>{
@@ -1805,11 +1805,52 @@ content += `</table></div>`
 /* ---------------- STYLE ---------------- */
 let style = `
 <style>
-body{font-family:Arial;font-size:11px;border:2px solid #000;padding:10px}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid #000;padding:5px;font-size:10px}
-.section{page-break-before:always}
-.section:first-child{page-break-before:auto}
+
+/* RESET */
+body{
+font-family:Arial;
+font-size:13px;
+margin:0;
+padding:0;
+}
+
+/* PAGE FRAME */
+.page{
+box-sizing:border-box;
+width:100%;
+min-height:100vh;
+padding:20px;
+border:2px solid #000;
+}
+
+/* TABLE */
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+th,td{
+border:1px solid #000;
+padding:6px;
+font-size:12px;
+vertical-align:top;
+}
+
+/* HEADINGS */
+h1{font-size:22px}
+h2{font-size:16px}
+h3{font-size:14px}
+
+/* PAGE BREAK FIX */
+.section{
+page-break-before:always;
+}
+
+.section:first-of-type{
+page-break-before:auto !important;
+}
+
 </style>
 `
 
@@ -1996,7 +2037,7 @@ html += `
 
 if(societyData.length){
 
-html += `<div class="section">
+html += `<div class="section page">
 <h2>SOCIETY AND WORK ENVIRONMENT</h2>`;
 
 let grouped = {};
@@ -2037,7 +2078,7 @@ else roomInsights[i.room.trim()].push(i.text);
 
 /* MATRIX */
 /* -------- ROOM MATRIX -------- */
-html+='<div class="section"><h2>Room Validation Matrix</h2><table><thead><tr><th>Question</th>';
+html+='<div class="section page"><h2>Room Validation Matrix</h2><table><thead><tr><th>Question</th>';
 rooms.forEach(r=>html+=`<th>${r}</th>`);
 html+='</tr></thead><tbody>';
 
@@ -2072,7 +2113,7 @@ html+='</tr>';
 html+='</tbody></table></div>';
 
 /* -------- WALL MATRIX -------- */
-html+='<div class="section"><h2>Wall Validation Matrix</h2><table><thead><tr><th>Question</th>';
+html+='<div class="section page"><h2>Wall Validation Matrix</h2><table><thead><tr><th>Question</th>';
 rooms.forEach(r=>html+=`<th>${r}</th>`);
 html+='</tr></thead><tbody>';
 
