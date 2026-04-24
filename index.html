@@ -1577,22 +1577,37 @@ roomInsights[key] = []
 roomInsights[key].push(i.text)
 }
 })
-
-/* ---------------- PROJECT DETAILS ---------------- */
-let project = {}
-matrixDataRaw.forEach(r=>{
-if(!r.Room && r.Item && r.Value){
-project[r.Item] = r.Value
-}
-})
-
 /* ---------------- BUILD HTML ---------------- */
 let content = ""
+/* ---------------- PROJECT DETAILS ---------------- */
+let project = matrixDataRaw[0] || {}
+ 
 
-/* INDEX */
+/* ---------------- COVER PAGE (NEW) ---------------- */
+let pid = (project["PID"] || project["Pid"] || "").toString().trim()
+let cx  = (project["Cx Name"] || project["Cx"] || "").toString().trim()
+let date = new Date().toLocaleDateString()
+
 content += `
-<div class="section">
-<h1>INDEX</h1>
+<div class="section" style="display:flex;flex-direction:column;height:100vh;justify-content:space-between;align-items:center;text-align:center;">
+
+<div style="margin-top:40px;">
+<h1 style="font-size:26px;letter-spacing:2px;margin-bottom:20px;">
+SITE VALIDATION REPORT
+</h1>
+
+<h2 style="font-size:16px;font-weight:normal;">
+${pid || "-"} ${cx ? "_ " + cx : ""}
+</h2>
+
+<div style="margin-top:10px;font-size:12px;">
+${date}
+</div>
+</div>
+
+<div style="width:100%;margin-bottom:40px;">
+<h2 style="text-align:left;">INDEX</h2>
+
 <table>
 <tr><th>Section</th></tr>
 <tr><td>Validation Summary & Project Details</td></tr>
@@ -1602,14 +1617,19 @@ content += `
 <tr><td>Measurements</td></tr>
 </table>
 </div>
+
+</div>
 `
 
-/* SUMMARY */
+/* ---------------- SUMMARY (FIXED) ---------------- */
 content += `<div class="section">
 <h2>VALIDATION SUMMARY & PROJECT DETAILS</h2>`
 
 Object.keys(project).forEach(k=>{
-content += `<p><b>${k}:</b> ${project[k]}</p>`
+if(["Room","Section","Item","Value","Walls"].includes(k)) return;
+
+let val = project[k] || ""
+content += `<p><b>${k}:</b> ${val}</p>`
 })
 
 content += `</div>`
