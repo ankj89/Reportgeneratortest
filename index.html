@@ -151,7 +151,12 @@ var projectDataRaw = {};
 var societyData = [];
  var wallMeasData = [];
 let currentReportId = null;
-function norm(str){return (str||"").toLowerCase().replace(/[^a-z0-9]/g,"");}
+ 
+function norm(str){
+return (str || "")
+.toLowerCase()
+.replace(/\s/g,"")   // only remove spaces
+}
 function getAllReports(){
 return JSON.parse(localStorage.getItem("validationReports") || "{}");
 }
